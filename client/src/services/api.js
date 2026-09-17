@@ -93,9 +93,15 @@ export const api = {
     return response.data;
   },
 
-  uploadBookFile: async (formData) => {
+  uploadBookFile: async (formData, onProgress) => {
     const response = await apiClient.post("/upload/book", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (progressEvent) => {
+        if (typeof onProgress !== "function") return;
+        const total = progressEvent.total;
+        if (!total || total <= 0) return;
+        onProgress(Math.round((progressEvent.loaded * 100) / total));
+      },
     });
     return response.data;
   },
@@ -131,6 +137,14 @@ export const api = {
     const response = await apiClient.post("/sync", {}, {
       params: category ? { category } : {},
     });
+    return response.data;
+  },
+  getGoogleDriveStatus: async () => {
+    const response = await apiClient.get("/auth/google/status");
+    return response.data;
+  },
+  disconnectGoogleDrive: async () => {
+    const response = await apiClient.delete("/auth/google/connection");
     return response.data;
   },
 };

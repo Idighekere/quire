@@ -1,9 +1,6 @@
 import { LoadingSpinner } from '@/components'
 import { useAuth } from '@/contexts'
-import { authApi } from '@/services'
-import { useQuery } from '@tanstack/react-query'
 import React from 'react'
-import { useEffect } from 'react'
 
 const AuthMiddleware = ({children}) => {
     const {loading} = useAuth()
