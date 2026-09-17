@@ -299,4 +299,33 @@ const googleAuthCallback = catchAsync(async (req: Request, res: Response): Promi
     }
 })
 
-export {login,logout,register,forgotPassword,resetPassword,googleAuthStart,googleAuthCallback,}
+// GET /api/v1/auth/google/status (admin) — whether any admin has a stored
+// Google Drive refresh token.
+const getGoogleConnectionStatus = catchAsync(async (_req: Request, res: Response): Promise<void> => {
+    const connectedUser = await User.exists({
+        googleRefreshToken: { $exists: true, $ne: null },
+    });
+
+    SuccessResponse(res, 200, { connected: Boolean(connectedUser) }, "Drive connection status");
+})
+
+// DELETE /api/v1/auth/google/connection — clears the CALLER's own stored
+// Google Drive refresh token.
+const disconnectGoogleConnection = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const callerId = req.user?._id;
+    if (!callerId) {
+        return next(new ErrorResponse("You are not logged in", 404));
+    }
+
+    const dbUser = await User.findById(callerId);
+    if (!dbUser) {
+        return next(new ErrorResponse("User not found", 404));
+    }
+
+    dbUser.googleRefreshToken = undefined;
+    await dbUser.save();
+
+    SuccessResponse(res, 200, { connected: false }, "Google Drive disconnected");
+})
+
+export {login,logout,register,forgotPassword,resetPassword,googleAuthStart,googleAuthCallback,getGoogleConnectionStatus,disconnectGoogleConnection,}

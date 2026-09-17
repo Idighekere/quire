@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.googleAuthCallback = exports.googleAuthStart = exports.resetPassword = exports.forgotPassword = exports.register = exports.logout = exports.login = void 0;
+exports.disconnectGoogleConnection = exports.getGoogleConnectionStatus = exports.googleAuthCallback = exports.googleAuthStart = exports.resetPassword = exports.forgotPassword = exports.register = exports.logout = exports.login = void 0;
 const configs_1 = require("../common/configs");
 const utils_1 = require("../common/utils");
 const middlewares_1 = require("../middlewares");
@@ -221,3 +221,28 @@ const googleAuthCallback = (0, middlewares_1.catchAsync)(async (req, res) => {
     }
 });
 exports.googleAuthCallback = googleAuthCallback;
+// GET /api/v1/auth/google/status (admin) — whether any admin has a stored
+// Google Drive refresh token.
+const getGoogleConnectionStatus = (0, middlewares_1.catchAsync)(async (_req, res) => {
+    const connectedUser = await models_1.User.exists({
+        googleRefreshToken: { $exists: true, $ne: null },
+    });
+    (0, utils_1.SuccessResponse)(res, 200, { connected: Boolean(connectedUser) }, "Drive connection status");
+});
+exports.getGoogleConnectionStatus = getGoogleConnectionStatus;
+// DELETE /api/v1/auth/google/connection — clears the CALLER's own stored
+// Google Drive refresh token.
+const disconnectGoogleConnection = (0, middlewares_1.catchAsync)(async (req, res, next) => {
+    const callerId = req.user?._id;
+    if (!callerId) {
+        return next(new utils_1.ErrorResponse("You are not logged in", 404));
+    }
+    const dbUser = await models_1.User.findById(callerId);
+    if (!dbUser) {
+        return next(new utils_1.ErrorResponse("User not found", 404));
+    }
+    dbUser.googleRefreshToken = undefined;
+    await dbUser.save();
+    (0, utils_1.SuccessResponse)(res, 200, { connected: false }, "Google Drive disconnected");
+});
+exports.disconnectGoogleConnection = disconnectGoogleConnection;
