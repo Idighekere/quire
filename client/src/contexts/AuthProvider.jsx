@@ -27,9 +27,6 @@ export const AuthProvider = ({ children }) => {
   //console.log(window.location.pathname)
   // const value = { state, dispatch }
 
-  // const isLoginRoute = window.location.pathname == '/auth/login'
-  const isDashboardRoute = window.location.pathname.startsWith('/dashboard')
-
   //console.log(isLoginRoute)
   const {
     isLoading,
@@ -38,8 +35,9 @@ export const AuthProvider = ({ children }) => {
   } = useQuery({
     queryKey: ['authUser'],
     queryFn: authApi.getCurrentUser,
-    retry: 1,
-    enabled: isDashboardRoute,
+    retry: false,
+    enabled: true,
+    staleTime: 5 * 60 * 1000,
     select: data => data.data,
     refetchOnWindowFocus: true,
     refetchOnMount: true,

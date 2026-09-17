@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,44 +12,38 @@ import {
   CardTitle
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Book, AlertCircle } from 'lucide-react'
-import { useAuth } from '@/contexts'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { authApi, getCurrentUserQueryOptions } from '@/services'
+import { Book, GoogleLogo, WarningCircle as AlertCircle } from "@phosphor-icons/react"
+import { useMutation } from '@tanstack/react-query'
+import { authApi } from '@/services'
+import { ENVIRONMENT } from '@/config'
 import toast from 'react-hot-toast'
 
-function LoginPage () {
-  const navigate = useNavigate()
-  //  const {  setUser } = useAuth()
+const GOOGLE_ERROR_MESSAGES = {
+  google_not_configured: 'Google sign-in is not set up on the server yet.',
+  google_failed: 'Google sign-in failed. Please try again.',
+  google_no_email: 'Could not verify an email address with Google.'
+}
 
+function LoginPage () {
+  const [searchParams] = useSearchParams()
+  const googleError = searchParams.get('error')
+  const googleErrorMessage = GOOGLE_ERROR_MESSAGES[googleError] || null
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors, isValid }
   } = useForm({
+    mode: 'onChange',
     defaultValues: {
       email: '',
       password: ''
     }
   })
 
-  // const {
-  //   refetch:fetchUser,
-  //   data:userData
-  // } = useQuery({...getCurrentUserQueryOptions(),enabled:false})
-
-  const {
-    mutateAsync: loginMutation,
-    error,
-    isPending
-  } = useMutation({
+  const { mutateAsync: loginMutation, error, isPending } = useMutation({
     mutationFn: async data => await authApi.login(data),
-    onSuccess: data => {
-      // fetchUser()
-      //console.log(data)
-      // setUser(data?.data?.user)
-
-      toast.success('Login successful. ')
+    onSuccess: () => {
+      toast.success('Login successful.')
       window.location.href = '/dashboard'
     },
     onError: err => {
@@ -63,27 +56,33 @@ function LoginPage () {
     await loginMutation(data)
   }
 
-  // if(error){
-  //   console.log(error)
-  //   return<div>Error</div>
-  // }
-
   return (
-    <div className='/container flex items-center justify-center /min-h-screen py-12 px-5 md:px-12 lg:px-16'>
-      <Card className='w-full max-w-md border-0 shadow-none'>
-        <CardHeader className='space-y-1'>
-          <div className='flex items-center justify-center mb-6'>
-            <Book className='h-12 w-12 text-primary' />
+    <div className='flex min-h-screen items-center justify-center bg-muted/30 px-5 py-12 md:px-12 lg:px-16'>
+      <Card className='w-full max-w-md border-0 bg-transparent shadow-none md:border md:bg-card md:shadow-card'>
+        <CardHeader className='space-y-1 px-0 md:px-6'>
+          <div className='mb-6 flex justify-center'>
+            <div className='flex size-14 items-center justify-center rounded-md bg-accent-lavender text-foreground'>
+              <Book weight='bold' className='h-7 w-7 text-primary' />
+            </div>
           </div>
-          <CardTitle className='text-2xl font-bold text-center'>
+          <span className='text-center font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground'>
+            Library member access
+          </span>
+          <CardTitle className='text-center text-2xl font-bold tracking-tight'>
             Login to your account
           </CardTitle>
-          <CardDescription className='text-center px-0'>
+          <CardDescription className='px-0 text-center'>
             Enter your email and password to add books
           </CardDescription>
         </CardHeader>
-        <CardContent className='px-0'>
+        <CardContent className='px-0 md:px-6'>
           <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+            {googleErrorMessage && (
+              <Alert variant='destructive'>
+                <AlertCircle className='h-4 w-4' />
+                <AlertDescription>{googleErrorMessage}</AlertDescription>
+              </Alert>
+            )}
             {error?.response?.data?.message && (
               <Alert variant='destructive'>
                 <AlertCircle className='h-4 w-4' />
@@ -106,10 +105,10 @@ function LoginPage () {
                     message: 'Invalid email address'
                   }
                 })}
-                className={`${errors.email ? 'border-red-500' : ''}`}
+                className={`${errors.email ? 'border-destructive' : ''}`}
               />
               {errors.email && (
-                <p className='text-sm text-red-500'>{errors.email.message}</p>
+                <p className='text-sm text-destructive'>{errors.email.message}</p>
               )}
             </div>
 
@@ -118,7 +117,7 @@ function LoginPage () {
                 <Label htmlFor='password'>Password</Label>
                 <Link
                   to='/forgot-password'
-                  className='text-sm text-primary hover:underline'
+                  className='text-sm text-primary transition-opacity hover:opacity-80'
                 >
                   Forgot password?
                 </Link>
@@ -134,10 +133,10 @@ function LoginPage () {
                     message: 'Password must be at least 6 characters'
                   }
                 })}
-                className={`${errors.password ? 'border-red-500' : ''}`}
+                className={`${errors.password ? 'border-destructive' : ''}`}
               />
               {errors.password && (
-                <p className='text-sm text-red-500'>
+                <p className='text-sm text-destructive'>
                   {errors.password.message}
                 </p>
               )}
@@ -146,16 +145,34 @@ function LoginPage () {
             <Button
               type='submit'
               className='w-full'
-              disabled={isPending || !Object.keys(errors).length == 0}
+              disabled={isPending || !isValid}
             >
               {isPending ? 'Logging in...' : 'Login'}
             </Button>
+
+            <div className='flex items-center gap-3'>
+              <span className='h-px flex-1 bg-border' />
+              <span className='text-xs text-muted-foreground'>or</span>
+              <span className='h-px flex-1 bg-border' />
+            </div>
+
+            <Button
+              type='button'
+              variant='outline'
+              className='w-full'
+              onClick={() => {
+                window.location.href = `${ENVIRONMENT.APP.BASE_URL}/auth/google?redirect=${encodeURIComponent(window.location.origin)}`
+              }}
+            >
+              <GoogleLogo className='h-4 w-4' />
+              Continue with Google
+            </Button>
           </form>
         </CardContent>
-        <CardFooter className='flex flex-col'>
+        <CardFooter className='flex flex-col px-0 md:px-6'>
           <div className='text-center text-sm text-muted-foreground'>
             Don't have an account?{' '}
-            <Link to='/auth/register' className='text-primary hover:underline'>
+            <Link to='/auth/register' className='font-medium text-primary transition-opacity hover:opacity-80'>
               Register
             </Link>
           </div>
