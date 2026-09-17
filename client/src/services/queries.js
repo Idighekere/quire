@@ -61,21 +61,64 @@ export const getAllBooksQueryOptions = (params = {}) => {
 }
 
 
-export const getBooksByUserQueryOptions=(user)=>{
-    const {_id}=user
+export const getBooksByUserQueryOptions=(user, params = {})=>{
+    const {_id}=user || {}
+    const { search = "", courseCode = "", department = "", level = "", semester = "", category = "", page = 1, limit = 20 } = params
 
     return queryOptions({
-        queryKey: ['books',_id],
-        queryFn: ()=>api.getBooksByUser(),
+        queryKey: ['books',_id, search, courseCode, department, level, semester, category, page, limit],
+        queryFn: ()=>api.getBooksByUser(params),
     })
 }
 
 
-export const getCoursesByUserQueryOptions=(user)=>{
+export const getCoursesByUserQueryOptions=(user, params = {})=>{
+    const {_id}=user || {}
+    const { search = "", department = "", level = "", semester = "", page = 1, limit = 20 } = params
 
     return queryOptions({
-        queryKey: ['courses',user._id],
-        queryFn: ()=>api.getCoursesByUser(),
+        queryKey: ['courses',_id, search, department, level, semester, page, limit],
+        queryFn: ()=>api.getCoursesByUser(params),
+    })
+}
+
+export const getDepartmentsQueryOptions = () => {
+    return queryOptions({
+        queryKey: ['departments'],
+        queryFn: () => api.getDepartments(),
+    })
+}
+
+export const lookupCourseQueryOptions = (courseCode, enabled = true) => {
+    return queryOptions({
+        queryKey: ['course', 'lookup', courseCode],
+        queryFn: () => api.lookupCourse(courseCode),
+        enabled: enabled && Boolean(courseCode?.trim()),
+        staleTime: 5 * 60 * 1000,
+    })
+}
+
+export const listRequestsQueryOptions = (params = {}) => {
+    return queryOptions({
+        queryKey: ['requests', params.status, params.search, params.page],
+        queryFn: () => api.listRequests(params),
+        keepPreviousData: true,
+    })
+}
+
+export const getPendingBooksQueryOptions = (params = {}) => {
+    return queryOptions({
+        queryKey: ['pendingBooks', params.page],
+        queryFn: () => api.getPendingBooks(params),
+        keepPreviousData: true,
+    })
+}
+
+export const getRequestQueryOptions = (requestId) => {
+    return queryOptions({
+        queryKey: ['request', requestId],
+        queryFn: () => api.listRequests({}),
+        enabled: Boolean(requestId),
     })
 }
 

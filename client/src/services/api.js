@@ -1,5 +1,4 @@
 import { ENVIRONMENT } from "@/config";
-import { useAuth } from "@/contexts";
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -37,13 +36,13 @@ export const api = {
     return response.data;
   },
 
-  getBooksByUser: async () => {
-    const response = await apiClient.get(`/books/`);
+  getBooksByUser: async (params = {}) => {
+    const response = await apiClient.get(`/books/`, { params });
     return response.data;
   },
 
-  getCoursesByUser: async () => {
-    const response = await apiClient.get(`/courses/me`);
+  getCoursesByUser: async (params = {}) => {
+    const response = await apiClient.get(`/courses/me`, { params });
     return response.data;
   },
 
@@ -54,10 +53,84 @@ export const api = {
     return response.data;
   },
 
+  updateCourse: async (id, formData) => {
+    const response = await apiClient.patch(`/courses/${id}`, formData);
+
+    return response.data;
+  },
+
+  deleteCourse: async (id) => {
+    const response = await apiClient.delete(`/courses/${id}`);
+
+    return response.data;
+  },
+
   addBook: async (formData) => {
-    //console.log(formData)
     const response = await apiClient.post(`/books/`, formData);
 
+    return response.data;
+  },
+
+  updateBook: async (id, formData) => {
+    const response = await apiClient.patch(`/books/${id}`, formData);
+
+    return response.data;
+  },
+
+  deleteBook: async (id) => {
+    const response = await apiClient.delete(`/books/${id}`);
+
+    return response.data;
+  },
+
+  lookupCourse: async (courseCode) => {
+    const response = await apiClient.get(`/courses/lookup/${encodeURIComponent(courseCode)}`);
+    return response.data;
+  },
+
+  getDepartments: async () => {
+    const response = await apiClient.get("/departments");
+    return response.data;
+  },
+
+  uploadBookFile: async (formData) => {
+    const response = await apiClient.post("/upload/book", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  // Requests
+  listRequests: async (params = {}) => {
+    const response = await apiClient.get("/requests", { params });
+    return response.data;
+  },
+  createRequest: async (formData) => {
+    const response = await apiClient.post("/requests", formData);
+    return response.data;
+  },
+  upvoteRequest: async (requestId) => {
+    const response = await apiClient.post(`/requests/${requestId}/want`);
+    return response.data;
+  },
+  fulfillRequest: async (requestId, bookId) => {
+    const response = await apiClient.post(`/requests/${requestId}/fulfill`, { bookId });
+    return response.data;
+  },
+
+  // Moderation + Drive sync (admin)
+  getPendingBooks: async (params = {}) => {
+    const response = await apiClient.get("/books/pending", { params });
+    return response.data;
+  },
+  moderateBook: async (bookId, status) => {
+    const response = await apiClient.patch(`/books/${bookId}/status`, { status });
+    return response.data;
+  },
+  syncDrive: async (category = "") => {
+    const response = await apiClient.post("/sync", {}, {
+      params: category ? { category } : {},
+    });
     return response.data;
   },
 };

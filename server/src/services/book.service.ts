@@ -27,6 +27,10 @@ export const getAllBooksService = async (
     {
       $unwind: "$course",
     },
+    // Public listing: only approved materials ($nin keeps legacy books w/o status)
+    {
+      $match: { status: { $nin: ["pending", "rejected"] } },
+    },
   ];
 
   //add search condition if provided
@@ -60,12 +64,16 @@ export const getAllBooksService = async (
       $project: {
         title: 1,
         driveUrl: 1,
+        driveFileId: 1,
         previewUrl: 1,
         category: 1,
+        academicSession: 1,
+        status: 1,
         createdAt: 1,
         course: {
           title: 1,
           courseCode: 1,
+          codePrefix: 1,
         },
       },
     },
