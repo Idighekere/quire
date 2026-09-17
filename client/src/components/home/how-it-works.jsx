@@ -1,45 +1,57 @@
 import { steps } from "@/constants";
+import { cn } from "@/lib/utils";
 
 export default function HowItWorks({
-  title = "How It Works",
+  title = "From search to download in four steps",
   description = "Follow these simple steps to find and access the engineering courses you need.",
 
 }) {
   return (
-    <section className="w-full py-12 md:py-24 bg-background flex flex-col justify-center items-center md:px-12 lg:px-16">
-      <div className="container px-4 md:px-6">
-        <div className="flex flex-col items-center text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl mb-4">{title}</h2>
-          <p className="max-w-[700px] text-muted-foreground md:text-xl">{description}</p>
+    <section className="w-full bg-muted/50 px-4 py-14 md:px-8 md:py-20">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-12 flex max-w-2xl flex-col items-start gap-4 md:mb-16">
+          <span className="inline-flex items-center gap-2 rounded-full bg-accent-sky px-4 py-1.5 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em]">
+            How it works
+          </span>
+          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+            {title}
+          </h2>
+          <p className="text-lg leading-relaxed text-muted-foreground md:text-xl">
+            {description}
+          </p>
         </div>
 
-        <div className="grid gap-12 md:gap-16">
+        <div className="grid gap-8">
           {steps.map((step, index) => (
             <div
               key={step.number}
-              className={`flex flex-col ${index % 2 === 1 ? "md:flex-row-reverse" : "md:flex-row"} gap-8 items-center`}
+              className={cn(
+                "flex flex-col items-center gap-8 md:flex-row md:gap-16",
+                index % 2 === 1 && "md:flex-row-reverse"
+              )}
             >
-              <div className="flex-1 space-y-4">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-lg">
-                  {step.number}
-                </div>
-                <h3 className="text-2xl font-bold">{step.title}</h3>
-                <p className="text-muted-foreground">{step.description}</p>
+              <div className="flex w-full flex-1 flex-col items-start gap-5 rounded-lg border bg-card p-6 shadow-card md:p-8">
+                <span className="font-mono text-5xl font-medium leading-none tracking-tight text-muted-foreground/60">
+                  {String(step.number).padStart(2, "0")}
+                </span>
+                <h3 className="text-2xl font-semibold tracking-tight">
+                  {step.title}
+                </h3>
+                <p className="max-w-md text-base leading-relaxed text-muted-foreground">
+                  {step.description}
+                </p>
               </div>
 
               {step.image && (
-                <div className="flex-1 w-full">
-                  <div className="relative overflow-hidden rounded-lg border shadow-sm">
+                <div className="w-full flex-1">
+                  <div className="relative overflow-hidden rounded-lg border shadow-card">
                     <img
                       src={step.image || "/placeholder.svg"}
                       alt={`Step ${step.number}: ${step.title}`}
                       width={400}
                       height={300}
-                      className="w-full h-auto object-cover"
+                      className="h-auto w-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                      <p className="text-sm font-medium">{step.title}</p>
-                    </div>
                   </div>
                 </div>
               )}
