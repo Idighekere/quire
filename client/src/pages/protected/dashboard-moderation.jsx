@@ -220,6 +220,8 @@ function DriveSyncPanel() {
   const skipped = (result && result.skipped) || []
   const added = (result && result.added) || []
   const summary = (result && result.summary) || { added: 0, skipped: 0, coursesCreated: 0 }
+  const visited = (result && result.visited) ?? summary.visited ?? 0
+  const folders = (result && result.folders) || summary.folders || []
 
   return (
     <Card>
@@ -306,6 +308,22 @@ function DriveSyncPanel() {
                 </div>
               )}
             </div>
+            <p className="text-sm text-muted-foreground">
+              Visited {visited} Drive items
+            </p>
+
+            {folders.length > 0 && (
+              <details className="space-y-1">
+                <summary className="text-sm font-medium cursor-pointer">
+                  Folders walked ({folders.length})
+                </summary>
+                <ul className="text-sm text-muted-foreground list-disc pl-5 max-h-40 overflow-y-auto">
+                  {folders.map((folder, index) => (
+                    <li key={index}>{folder}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
 
             {added.length > 0 && (
               <div className="space-y-1">

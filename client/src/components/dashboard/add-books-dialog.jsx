@@ -133,6 +133,7 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
     },
     onError: (error) => {
       console.error("Error uploading material:", error)
+      setUploadPercent(0)
       const message = error?.response?.data?.message || "Failed to upload material"
       toast.error(message)
     },
@@ -440,13 +441,24 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
                 </p>
                 {(isUploading || uploadPercent > 0) && (
                   <div className="space-y-1">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary transition-all"
-                        style={{ width: `${uploadPercent}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">{uploadPercent}%{isUploading ? " uploading…" : " uploaded"}</p>
+                    {isUploading && uploadPercent >= 100 ? (
+                      <>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                          <div className="h-full w-full rounded-full bg-primary animate-pulse" />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Saving to library Drive…</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: `${uploadPercent}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">{uploadPercent}%{isUploading ? " uploading…" : " uploaded"}</p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
