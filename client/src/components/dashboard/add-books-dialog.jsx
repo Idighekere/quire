@@ -63,6 +63,7 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
 
   const [activeTab, setActiveTab] = useState("link")
   const [selectedFile, setSelectedFile] = useState(null)
+  const [uploadPercent, setUploadPercent] = useState(0)
 
   // Lookup course when code changes (debounced via React Query)
   const { data: courseLookup, isLoading: courseLookupLoading, error: courseLookupError } = useQuery(
@@ -116,10 +117,11 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
 
   // Multipart upload to the server, which stores the file on Google Drive.
   const { mutate: uploadFileMutation, isPending: isUploading } = useMutation({
-    mutationFn: (formData) => api.uploadBookFile(formData),
+    mutationFn: (formData) => api.uploadBookFile(formData, (percent) => setUploadPercent(percent)),
     onSuccess: (data) => {
       reset()
       setSelectedFile(null)
+      setUploadPercent(0)
       setActiveTab("link")
       onOpenChange(false)
       onSuccess()
@@ -191,6 +193,8 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
       onOpenChange={(newOpen) => {
         if (!newOpen) {
           reset()
+          setSelectedFile(null)
+          setUploadPercent(0)
         }
         onOpenChange(newOpen)
       }}
@@ -378,7 +382,7 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
               {errors.driveUrl && <p className="text-sm text-destructive">{errors.driveUrl.message}</p>}
             </div>
           ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <Tabs value={activeTab} onValueChange={(value) => { setActiveTab(value); setUploadPercent(0) }} className="space-y-4">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="link">Paste Drive Link</TabsTrigger>
               <TabsTrigger value="upload">Upload File</TabsTrigger>
@@ -413,7 +417,7 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
                     accept=".pdf,.doc,.docx,.ppt,.pptx"
                     className="hidden"
                     id="file-upload"
-                    onChange={(e) => setSelectedFile(e.target.files && e.target.files[0])}
+                    onChange={(e) => { setSelectedFile(e.target.files && e.target.files[0]); setUploadPercent(0) }}
                   />
                   <label htmlFor="file-upload" className="cursor-pointer block">
                     {selectedFile ? (
@@ -434,6 +438,17 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
                 <p className="text-xs text-muted-foreground">
                   The file is stored in the library's Google Drive and becomes visible once approved.
                 </p>
+                {(isUploading || uploadPercent > 0) && (
+                  <div className="space-y-1">
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${uploadPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">{uploadPercent}%{isUploading ? " uploading…" : " uploaded"}</p>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
