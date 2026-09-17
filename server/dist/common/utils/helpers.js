@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.slugify = exports.buildDriveDownloadUrl = exports.buildDrivePreviewUrl = exports.splitCourseCodePrefix = exports.deriveLevelSemesterFromCourseCode = exports.normalizeCourseCode = exports.clearCookie = exports.generateTokens = exports.getDepartmentShortName = exports.extractDriveFileId = exports.setCookie = exports.hashData = exports.verifyToken = exports.comparePassword = exports.hashPassword = void 0;
+exports.slugify = exports.probeDriveFilePublic = exports.isDriveFilePublic = exports.buildDriveDownloadUrl = exports.buildDrivePreviewUrl = exports.splitCourseCodePrefix = exports.deriveLevelSemesterFromCourseCode = exports.normalizeCourseCode = exports.clearCookie = exports.generateTokens = exports.getDepartmentShortName = exports.extractDriveFileId = exports.setCookie = exports.hashData = exports.verifyToken = exports.comparePassword = exports.hashPassword = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const configs_1 = require("../configs");
@@ -112,6 +112,38 @@ const buildDrivePreviewUrl = (fileId) => `https://drive.google.com/file/d/${file
 exports.buildDrivePreviewUrl = buildDrivePreviewUrl;
 const buildDriveDownloadUrl = (fileId) => `https://drive.google.com/uc?export=download&id=${fileId}`;
 exports.buildDriveDownloadUrl = buildDriveDownloadUrl;
+const probeDriveFilePublic = async (fileId) => {
+    const url = `https://drive.google.com/uc?export=download&confirm=t&id=${encodeURIComponent(fileId)}`;
+    const res = await fetch(url, {
+        headers: { Range: "bytes=0-0" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(10000),
+    });
+    try {
+        await res.body?.cancel();
+    }
+    catch {
+        // Body already closed; the status check below still stands.
+    }
+    if (res.status !== 200 && res.status !== 206)
+        return { isPublic: false };
+    const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+    if (contentType.includes("text/html"))
+        return { isPublic: false };
+    const rangeHeader = res.headers.get("content-range") ?? "";
+    const total = /\/(\d+)\s*$/.exec(rangeHeader)?.[1];
+    const sizeBytes = total ? parseInt(total, 10) : NaN;
+    return {
+        isPublic: true,
+        ...(Number.isFinite(sizeBytes) ? { sizeBytes } : {}),
+    };
+};
+exports.probeDriveFilePublic = probeDriveFilePublic;
+const isDriveFilePublic = async (fileId) => {
+    const probe = await probeDriveFilePublic(fileId);
+    return probe.isPublic;
+};
+exports.isDriveFilePublic = isDriveFilePublic;
 const slugify = (text) => {
     return text
         .toLowerCase()

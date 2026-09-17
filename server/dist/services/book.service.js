@@ -55,6 +55,7 @@ const getAllBooksService = async (page, limit, search, category) => {
             previewUrl: 1,
             category: 1,
             academicSession: 1,
+            size: 1,
             status: 1,
             createdAt: 1,
             course: {

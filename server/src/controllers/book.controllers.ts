@@ -1,4 +1,4 @@
-import { ErrorResponse, SuccessResponse, extractDriveFileId } from "@/common/utils";
+import { ErrorResponse, SuccessResponse, extractDriveFileId, probeDriveFilePublic, type DrivePublicProbe } from "@/common/utils";
 import { catchAsync } from "@/middlewares";
 import { Book, MaterialRequest } from "@/models";
 import { getAllBooksService } from "@/services/book.service";
@@ -12,6 +12,39 @@ import {
 } from "@/common/constants";
 import { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
+
+// Add-via-link stores only the Drive file ID + link (no download, no copy,
+// no quota), and readers open it with no credentials — so the file must be
+// readable anonymously. Returns the publicity probe when verified (callers
+// store probe.sizeBytes on the book); otherwise sends the rejection through
+// `next` and returns null (caller must return).
+const verifyDriveLinkPublic = async (
+  driveFileId: string,
+  next: NextFunction,
+): Promise<DrivePublicProbe | null> => {
+  let probe: DrivePublicProbe;
+  try {
+    probe = await probeDriveFilePublic(driveFileId);
+  } catch {
+    next(
+      new ErrorResponse(
+        "Could not verify the Drive link right now. Check the link and try again.",
+        503,
+      ),
+    );
+    return null;
+  }
+  if (!probe.isPublic) {
+    next(
+      new ErrorResponse(
+        "This file isn't shared publicly — set sharing to 'Anyone with the link' and try again.",
+        400,
+      ),
+    );
+    return null;
+  }
+  return probe;
+};
 
 const getBooksByCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -58,6 +91,7 @@ const getBooksByCourse = catchAsync(
             category: 1,
             academicSession: 1,
             status: 1,
+            size: 1,
             "course.title": 1,
             "course.courseCode": 1,
             "course.codePrefix": 1,
@@ -121,9 +155,9 @@ const addBook = catchAsync(async (req: Request, res, next) => {
     : null;
   if (!driveFileId && link) {
     driveFileId = extractDriveFileId(String(link));
-    if (!driveFileId) {
-      return next(new ErrorResponse("Invalid Google Drive link", 400));
-    }
+  }
+  if (!driveFileId) {
+    return next(new ErrorResponse("Invalid Google Drive link", 400));
   }
 
   // Skip duplicates: same Drive file already registered
@@ -133,6 +167,12 @@ const addBook = catchAsync(async (req: Request, res, next) => {
       new ErrorResponse("This file has already been added to the library", 409),
     );
   }
+
+  // Link-mode stores just the ID + link, so the file must be anonymously
+  // readable or every reader hits a permission wall. The probe also carries
+  // the byte size, captured from the same verification request.
+  const linkProbe = await verifyDriveLinkPublic(driveFileId, next);
+  if (!linkProbe) return;
 
   // Find-or-create the course: level/semester derived from the code,
   // title + departments required only when creating.
@@ -150,6 +190,7 @@ const addBook = catchAsync(async (req: Request, res, next) => {
     course: course._id,
     category,
     academicSession: academicSession || undefined,
+    size: linkProbe.sizeBytes,
     status: req?.user?.role === 'admin' ? BookStatus.Approved : BookStatus.Pending,
     uploadedBy: req?.user._id,
   });
@@ -200,14 +241,21 @@ const updateBook = catchAsync(async (req, res, next) => {
 
   const link = driveUrl || driveLink;
   if (driveFileId) {
-    book.driveFileId = String(driveFileId).trim();
+    const newFileId = String(driveFileId).trim();
+    const idProbe = await verifyDriveLinkPublic(newFileId, next);
+    if (!idProbe) return;
+    book.driveFileId = newFileId;
+    book.size = idProbe.sizeBytes;
   } else if (link) {
     const fileId = extractDriveFileId(String(link));
     if (!fileId) {
       return next(new ErrorResponse("Invalid Google Drive link", 400));
     }
+    const linkProbe = await verifyDriveLinkPublic(fileId, next);
+    if (!linkProbe) return;
     book.driveUrl = link;
     book.driveFileId = fileId;
+    book.size = linkProbe.sizeBytes;
   }
 
   // Non-admin edits go back into the moderation queue.
@@ -352,6 +400,7 @@ const getBooksByUser = catchAsync(async (req: Request, res, next) => {
     level,
     semester,
     category,
+    sort = "newest",
     page = "1",
     limit = "20",
   } = req.query;
@@ -434,9 +483,17 @@ const getBooksByUser = catchAsync(async (req: Request, res, next) => {
   const total =
     (countResult[0] as { total?: number } | undefined)?.total || 0;
 
+  const BOOK_SORTS: Record<string, Record<string, 1 | -1>> = {
+    newest: { createdAt: -1 },
+    oldest: { createdAt: 1 },
+    "title-az": { title: 1 },
+    "title-za": { title: -1 },
+  };
+  const bookSortStage = BOOK_SORTS[String(sort)] ?? BOOK_SORTS.newest;
+
   const books = await Book.aggregate([
     ...basePipeline,
-    { $sort: { createdAt: -1 } },
+    { $sort: bookSortStage },
     { $skip: (pageNum - 1) * limitNum },
     { $limit: limitNum },
     {

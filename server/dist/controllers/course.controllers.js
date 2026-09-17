@@ -129,7 +129,7 @@ const filterCourses = (0, middlewares_1.catchAsync)(async (req, res, next) => {
 });
 exports.filterCourses = filterCourses;
 const getCoursesByUser = (0, middlewares_1.catchAsync)(async (req, res, next) => {
-    const { search, department, level, semester, page = "1", limit = "20", } = req.query;
+    const { search, department, level, semester, sort = "newest", page = "1", limit = "20", } = req.query;
     const pageNum = Math.max(parseInt(String(page), 10) || 1, 1);
     const limitNum = Math.min(Math.max(parseInt(String(limit), 10) || 20, 1), 100);
     const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -174,8 +174,24 @@ const getCoursesByUser = (0, middlewares_1.catchAsync)(async (req, res, next) =>
                 as: "bookList",
             },
         },
+        // Material count up front so "most materials" can sort on it.
+        // Courses carry no timestamps — recency sorts use the time-ordered _id.
+        {
+            $addFields: {
+                booksCount: { $size: "$bookList" },
+            },
+        },
         ...(filters.length > 0 ? [{ $match: { $and: filters } }] : []),
     ];
+    const COURSE_SORTS = {
+        newest: { _id: -1 },
+        oldest: { _id: 1 },
+        "title-az": { title: 1 },
+        "title-za": { title: -1 },
+        level: { level: 1, semester: 1, courseCode: 1 },
+        "most-books": { booksCount: -1 },
+    };
+    const sortStage = COURSE_SORTS[String(sort)] ?? COURSE_SORTS.newest;
     const countResult = await models_1.Course.aggregate([
         ...basePipeline,
         { $count: "total" },
@@ -183,7 +199,7 @@ const getCoursesByUser = (0, middlewares_1.catchAsync)(async (req, res, next) =>
     const total = countResult[0]?.total || 0;
     const courses = await models_1.Course.aggregate([
         ...basePipeline,
-        { $sort: { level: 1, semester: 1, courseCode: 1 } },
+        { $sort: sortStage },
         { $skip: (pageNum - 1) * limitNum },
         { $limit: limitNum },
         {

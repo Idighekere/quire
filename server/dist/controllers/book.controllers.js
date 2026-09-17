@@ -7,6 +7,26 @@ const models_1 = require("../models");
 const book_service_1 = require("../services/book.service");
 const course_service_1 = require("../services/course.service");
 const constants_1 = require("../common/constants");
+// Add-via-link stores only the Drive file ID + link (no download, no copy,
+// no quota), and readers open it with no credentials — so the file must be
+// readable anonymously. Returns the publicity probe when verified (callers
+// store probe.sizeBytes on the book); otherwise sends the rejection through
+// `next` and returns null (caller must return).
+const verifyDriveLinkPublic = async (driveFileId, next) => {
+    let probe;
+    try {
+        probe = await (0, utils_1.probeDriveFilePublic)(driveFileId);
+    }
+    catch {
+        next(new utils_1.ErrorResponse("Could not verify the Drive link right now. Check the link and try again.", 503));
+        return null;
+    }
+    if (!probe.isPublic) {
+        next(new utils_1.ErrorResponse("This file isn't shared publicly — set sharing to 'Anyone with the link' and try again.", 400));
+        return null;
+    }
+    return probe;
+};
 const getBooksByCourse = (0, middlewares_1.catchAsync)(async (req, res, next) => {
     const { courseCode } = req.params;
     if (!courseCode) {
@@ -47,6 +67,7 @@ const getBooksByCourse = (0, middlewares_1.catchAsync)(async (req, res, next) =>
                 category: 1,
                 academicSession: 1,
                 status: 1,
+                size: 1,
                 "course.title": 1,
                 "course.courseCode": 1,
                 "course.codePrefix": 1,
@@ -86,15 +107,21 @@ const addBook = (0, middlewares_1.catchAsync)(async (req, res, next) => {
         : null;
     if (!driveFileId && link) {
         driveFileId = (0, utils_1.extractDriveFileId)(String(link));
-        if (!driveFileId) {
-            return next(new utils_1.ErrorResponse("Invalid Google Drive link", 400));
-        }
+    }
+    if (!driveFileId) {
+        return next(new utils_1.ErrorResponse("Invalid Google Drive link", 400));
     }
     // Skip duplicates: same Drive file already registered
     const duplicate = await models_1.Book.findOne({ driveFileId });
     if (duplicate) {
         return next(new utils_1.ErrorResponse("This file has already been added to the library", 409));
     }
+    // Link-mode stores just the ID + link, so the file must be anonymously
+    // readable or every reader hits a permission wall. The probe also carries
+    // the byte size, captured from the same verification request.
+    const linkProbe = await verifyDriveLinkPublic(driveFileId, next);
+    if (!linkProbe)
+        return;
     // Find-or-create the course: level/semester derived from the code,
     // title + departments required only when creating.
     const { course, created: courseCreated } = await (0, course_service_1.findOrCreateCourseFromCode)({
@@ -110,6 +137,7 @@ const addBook = (0, middlewares_1.catchAsync)(async (req, res, next) => {
         course: course._id,
         category,
         academicSession: academicSession || undefined,
+        size: linkProbe.sizeBytes,
         status: req?.user?.role === 'admin' ? constants_1.BookStatus.Approved : constants_1.BookStatus.Pending,
         uploadedBy: req?.user._id,
     });
@@ -146,15 +174,24 @@ const updateBook = (0, middlewares_1.catchAsync)(async (req, res, next) => {
         book.academicSession = academicSession;
     const link = driveUrl || driveLink;
     if (driveFileId) {
-        book.driveFileId = String(driveFileId).trim();
+        const newFileId = String(driveFileId).trim();
+        const idProbe = await verifyDriveLinkPublic(newFileId, next);
+        if (!idProbe)
+            return;
+        book.driveFileId = newFileId;
+        book.size = idProbe.sizeBytes;
     }
     else if (link) {
         const fileId = (0, utils_1.extractDriveFileId)(String(link));
         if (!fileId) {
             return next(new utils_1.ErrorResponse("Invalid Google Drive link", 400));
         }
+        const linkProbe = await verifyDriveLinkPublic(fileId, next);
+        if (!linkProbe)
+            return;
         book.driveUrl = link;
         book.driveFileId = fileId;
+        book.size = linkProbe.sizeBytes;
     }
     // Non-admin edits go back into the moderation queue.
     if (!isAdmin && book.status === constants_1.BookStatus.Approved) {
@@ -253,7 +290,7 @@ const listPendingBooks = (0, middlewares_1.catchAsync)(async (req, res, _next) =
 });
 exports.listPendingBooks = listPendingBooks;
 const getBooksByUser = (0, middlewares_1.catchAsync)(async (req, res, next) => {
-    const { search, courseCode, department, level, semester, category, page = "1", limit = "20", } = req.query;
+    const { search, courseCode, department, level, semester, category, sort = "newest", page = "1", limit = "20", } = req.query;
     const pageNum = Math.max(parseInt(String(page), 10) || 1, 1);
     const limitNum = Math.min(Math.max(parseInt(String(limit), 10) || 20, 1), 100);
     // Admins see every book; non-admins see only their own uploads.
@@ -318,9 +355,16 @@ const getBooksByUser = (0, middlewares_1.catchAsync)(async (req, res, next) => {
         { $count: "total" },
     ]);
     const total = countResult[0]?.total || 0;
+    const BOOK_SORTS = {
+        newest: { createdAt: -1 },
+        oldest: { createdAt: 1 },
+        "title-az": { title: 1 },
+        "title-za": { title: -1 },
+    };
+    const bookSortStage = BOOK_SORTS[String(sort)] ?? BOOK_SORTS.newest;
     const books = await models_1.Book.aggregate([
         ...basePipeline,
-        { $sort: { createdAt: -1 } },
+        { $sort: bookSortStage },
         { $skip: (pageNum - 1) * limitNum },
         { $limit: limitNum },
         {

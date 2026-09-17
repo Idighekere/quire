@@ -122,6 +122,7 @@ const getCoursesByUser = catchAsync(async (req: Request, res, next) => {
     department,
     level,
     semester,
+    sort = "newest",
     page = "1",
     limit = "20",
   } = req.query;
@@ -178,8 +179,25 @@ const getCoursesByUser = catchAsync(async (req: Request, res, next) => {
         as: "bookList",
       },
     },
+    // Material count up front so "most materials" can sort on it.
+    // Courses carry no timestamps — recency sorts use the time-ordered _id.
+    {
+      $addFields: {
+        booksCount: { $size: "$bookList" },
+      },
+    },
     ...(filters.length > 0 ? [{ $match: { $and: filters } }] : []),
   ];
+
+  const COURSE_SORTS: Record<string, Record<string, 1 | -1>> = {
+    newest: { _id: -1 },
+    oldest: { _id: 1 },
+    "title-az": { title: 1 },
+    "title-za": { title: -1 },
+    level: { level: 1, semester: 1, courseCode: 1 },
+    "most-books": { booksCount: -1 },
+  };
+  const sortStage = COURSE_SORTS[String(sort)] ?? COURSE_SORTS.newest;
 
   const countResult = await Course.aggregate([
     ...basePipeline,
@@ -190,7 +208,7 @@ const getCoursesByUser = catchAsync(async (req: Request, res, next) => {
 
   const courses = await Course.aggregate([
     ...basePipeline,
-    { $sort: { level: 1, semester: 1, courseCode: 1 } },
+    { $sort: sortStage },
     { $skip: (pageNum - 1) * limitNum },
     { $limit: limitNum },
     {

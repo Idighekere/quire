@@ -131,6 +131,60 @@ const buildDrivePreviewUrl = (fileId: string) =>
 const buildDriveDownloadUrl = (fileId: string) =>
     `https://drive.google.com/uc?export=download&id=${fileId}`;
 
+/**
+ * Check whether a Drive file is readable without authentication
+ * ("Anyone with the link" or public). Downloads at most one byte: it
+ * follows Google's redirect to the content servers with a
+ * `Range: bytes=0-0` request and never sends credentials. Public binaries
+ * answer 200/206 with a non-HTML content type; private or missing files
+ * answer 403/404, and native Google Docs/Sheets/Slides answer with an
+ * HTML error page (they need an export format, not a direct download).
+ * Throws on network failure/timeout so callers can tell
+ * "could not verify" apart from "not public".
+ */
+/**
+ * Probe anonymous readability AND byte size in one request. Same mechanics
+ * as isDriveFilePublic, but also parses the total out of the
+ * `Content-Range: bytes 0-0/<total>` header so paste-link adds can store
+ * a size without any Drive API access (drive.file could never see these
+ * files). Native Google Docs have no byte size — sizeBytes stays undefined.
+ * Throws on network failure/timeout so callers can tell
+ * "could not verify" apart from "not public".
+ */
+export interface DrivePublicProbe {
+  isPublic: boolean;
+  sizeBytes?: number;
+}
+
+const probeDriveFilePublic = async (fileId: string): Promise<DrivePublicProbe> => {
+    const url = `https://drive.google.com/uc?export=download&confirm=t&id=${encodeURIComponent(fileId)}`;
+    const res = await fetch(url, {
+        headers: { Range: "bytes=0-0" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(10000),
+    });
+    try {
+        await res.body?.cancel();
+    } catch {
+        // Body already closed; the status check below still stands.
+    }
+    if (res.status !== 200 && res.status !== 206) return { isPublic: false };
+    const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+    if (contentType.includes("text/html")) return { isPublic: false };
+    const rangeHeader = res.headers.get("content-range") ?? "";
+    const total = /\/(\d+)\s*$/.exec(rangeHeader)?.[1];
+    const sizeBytes = total ? parseInt(total, 10) : NaN;
+    return {
+      isPublic: true,
+      ...(Number.isFinite(sizeBytes) ? { sizeBytes } : {}),
+    };
+};
+
+const isDriveFilePublic = async (fileId: string): Promise<boolean> => {
+    const probe = await probeDriveFilePublic(fileId);
+    return probe.isPublic;
+};
+
 const slugify = (text: string): string => {
     return text
         .toLowerCase()
@@ -169,4 +223,4 @@ const getDepartmentShortName = (name: string) => {
 }
 
 
-export { hashPassword, comparePassword, verifyToken, hashData, setCookie, extractDriveFileId, getDepartmentShortName, generateTokens, clearCookie, normalizeCourseCode, deriveLevelSemesterFromCourseCode, splitCourseCodePrefix, buildDrivePreviewUrl, buildDriveDownloadUrl, slugify }
+export { hashPassword, comparePassword, verifyToken, hashData, setCookie, extractDriveFileId, getDepartmentShortName, generateTokens, clearCookie, normalizeCourseCode, deriveLevelSemesterFromCourseCode, splitCourseCodePrefix, buildDrivePreviewUrl, buildDriveDownloadUrl, isDriveFilePublic, probeDriveFilePublic, slugify }

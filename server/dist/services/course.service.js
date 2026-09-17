@@ -7,9 +7,23 @@ const constants_1 = require("../common/constants");
 const utils_2 = require("../common/utils");
 const filterCoursesService = async (department, semester, level) => {
     const matchConditions = {};
-    // if department is provided, filter by department
+    // if department is provided, filter by department. Accepts the shortName
+    // ("CVE"), the URL slug ("civil-engineering"), or the full name — so
+    // shared/bookmarked links keep working even when stored slugs are stale.
     if (department) {
-        matchConditions["departments.shortName"] = department;
+        const raw = String(department).trim();
+        const slugAsName = raw.replace(/[-_]+/g, " ").trim();
+        const escapeRegex = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const dept = await models_1.Department.findOne({
+            $or: [
+                { shortName: raw.toUpperCase() },
+                { slug: raw.toLowerCase() },
+                { name: { $regex: `^${escapeRegex(slugAsName)}$`, $options: "i" } },
+            ],
+        }).select("_id");
+        if (!dept)
+            return [];
+        matchConditions["departments._id"] = dept._id;
     }
     //if level is provided, filter by level
     if (level) {
