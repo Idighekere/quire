@@ -9,7 +9,6 @@ import { User } from "@/models";
 const authenticate = async ({ accessToken, refreshToken }: { accessToken?: string; refreshToken?: string }) => {
 
     const isProd = ENVIRONMENT?.APP.ENV === "production"
-console.log(accessToken)
 
     if (!refreshToken) {
 

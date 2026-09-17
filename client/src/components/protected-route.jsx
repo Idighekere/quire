@@ -2,9 +2,6 @@ import { useAuth } from '@/contexts'
 import { Navigate, useLocation,Outlet
  } from 'react-router-dom'
 import Preloader from './ui/preloader'
-import { authApi, getCurrentUserQueryOptions } from '@/services'
-import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
 
 const ProtectedRoute = ({
   redirectPath = '/auth/login',
@@ -27,18 +24,14 @@ const ProtectedRoute = ({
     return <Navigate to='/dashboard
     ' replace />
   }
-  if(user && (allowedRoles && allowedRoles.includes(user?.role))) {
-    // return <Outlet/>
-    return children
-  } else if (user == null || (allowedRoles && !allowedRoles.includes(user.role))) {
-    return <Navigate to='/unauthorized' replace />
-    // return <div>Unauthorized</div>
-  }
-  else{
+  if (user == null) {
     return <Navigate to={redirectPath} state={{ from: location }} replace />
   }
+  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    return <Navigate to='/unauthorized' replace />
+  }
 
-  // return children
+  return children
 }
 
 export default ProtectedRoute
