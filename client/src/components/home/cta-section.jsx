@@ -18,13 +18,13 @@ export default function CtaSection() {
             <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
               Browse 8 departments or request what&apos;s missing — the community keeps the quire growing.
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg">
+            <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
+              <Button asChild size="lg" className="w-full sm:w-auto">
                 <Link to="/materials">
                   Browse materials <ArrowRight weight="bold" className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg">
+              <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
                 <Link to="/requests">Request a material</Link>
               </Button>
             </div>
