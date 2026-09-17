@@ -26,7 +26,9 @@ exports.ENVIRONMENT = {
         }
     },
     DRIVE: {
-        ROOT_FOLDER_ID: process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || ''
+        ROOT_FOLDER_ID: process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || '',
+        SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '',
+        SERVICE_ACCOUNT_PRIVATE_KEY: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || ''
     },
     GOOGLE: {
         CLIENT_ID: process.env.GOOGLE_CLIENT_ID || '',

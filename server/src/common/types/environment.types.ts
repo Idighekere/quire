@@ -20,6 +20,8 @@ export type IEnvironment = {
     },
     DRIVE: {
         ROOT_FOLDER_ID: string
+        SERVICE_ACCOUNT_EMAIL: string
+        SERVICE_ACCOUNT_PRIVATE_KEY: string
     },
     GOOGLE: {
         CLIENT_ID: string

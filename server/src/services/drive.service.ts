@@ -56,19 +56,56 @@ export interface DriveAboutResult {
 
 /**
  * Google Drive service.
- * All Drive access (reads/sync + writes) runs as the library admin's Google
- * account via OAuth (drive.file): the first admin to sign in with Google
- * connects the shared library Drive, and their stored refresh token is
- * reused server-side. This keeps single ownership/quota regardless of who
- * uploads. Use driveServiceForUser()/driveServiceForAdmin() to construct.
+ * Reads (sync walk, debug) run as the library service account, which sees
+ * every file inside the shared master folder by folder ACL. Writes (uploads)
+ * run as the connected admin's Google account via OAuth (drive.file) so the
+ * free-Gmail service account never hits a storage-quota 403. User-scoped
+ * flows (contributor pickers) reuse per-user OAuth tokens. Use
+ * driveServiceForServiceAccount()/driveServiceForAdmin()/driveServiceForUser()
+ * to construct.
  */
 export class DriveService {
   private drive: drive_v3.Drive;
+  private authClient: drive_v3.Options["auth"];
   private rootFolderId: string;
 
   constructor(auth: drive_v3.Options["auth"], rootFolderId?: string) {
     this.drive = google.drive({ version: "v3", auth });
+    this.authClient = auth;
     this.rootFolderId = rootFolderId ?? ENVIRONMENT.DRIVE.ROOT_FOLDER_ID;
+  }
+
+  /**
+   * Mint a short-lived access token for the connected admin account.
+   * Handed to the browser for the Google Picker only: the picker proves
+   * the admin selected each file, and that selection grants the app
+   * per-file access under drive.file. The token itself carries no extra
+   * scope and expires on its own.
+   */
+  async getAccessToken(): Promise<string> {
+    const client = this.authClient as InstanceType<typeof google.auth.OAuth2>;
+    const { token } = await client.getAccessToken();
+    if (!token) {
+      throw new ErrorResponse(
+        "Could not mint a Drive access token. Reconnect Google Drive and try again.",
+        503,
+      );
+    }
+    return token;
+  }
+
+  /**
+   * Fetch one file's metadata by ID. Works for picker-selected files
+   * (selection grants per-file access under drive.file). Throws the
+   * Drive 404/403 when the file was never granted to the app.
+   */
+  async getFile(fileId: string): Promise<drive_v3.Schema$File> {
+    const res = await this.drive.files.get({
+      fileId,
+      fields: "id, name, mimeType, parents, size",
+      supportsAllDrives: true,
+    });
+    return res.data;
   }
 
   /**
@@ -329,6 +366,34 @@ export class DriveService {
       supportsAllDrives: true,
     });
   }
+}
+
+/**
+ * Build a DriveService bound to the library service account. Scoped to
+ * drive.readonly on purpose (even when the folder share grants Editor) so
+ * the sync walk can never write. Sees everything inside the shared master
+ * folder by folder ACL — hand-dropped files included — and nothing else.
+ * Throws 503 when the SA credentials are not configured.
+ */
+export function driveServiceForServiceAccount(): DriveService {
+  const email = ENVIRONMENT.DRIVE.SERVICE_ACCOUNT_EMAIL;
+  // .env stores the PEM with literal \n escapes; the JWT client needs real newlines.
+  const privateKey = (ENVIRONMENT.DRIVE.SERVICE_ACCOUNT_PRIVATE_KEY || "").replace(
+    /\\n/g,
+    "\n",
+  );
+  if (!email || !privateKey) {
+    throw new ErrorResponse(
+      "Library service account is not configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.",
+      503,
+    );
+  }
+  const jwtClient = new google.auth.JWT({
+    email,
+    key: privateKey,
+    scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+  });
+  return new DriveService(jwtClient, ENVIRONMENT.DRIVE.ROOT_FOLDER_ID);
 }
 
 /**

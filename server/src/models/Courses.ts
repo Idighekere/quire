@@ -24,6 +24,11 @@ const CourseSchema = new Schema<ICourse>({
         required: false,
         match: [/^[A-Z]+$/, 'School prefix must be letters only']
     },
+    driveFolderId: {
+        type: String,
+        required: false,
+        trim: true,
+    },
     departments: {
         type: [Schema.Types.ObjectId],
         ref: 'Department',

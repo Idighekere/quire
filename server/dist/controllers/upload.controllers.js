@@ -90,13 +90,39 @@ const uploadBookFile = (0, middlewares_1.catchAsync)(async (req, res, next) => {
     // Any logged-in uploader may upload; only an admin needs to have
     // connected Google. driveServiceForAdmin throws 503 when none has.
     const adminDriveService = await (0, drive_service_1.driveServiceForAdmin)();
-    let folderId;
+    let folderId = null;
+    // Prefer the bound folder (set by sync/picker import or a previous
+    // upload): invisible manual folders can never re-match by name, but
+    // their stored ID still resolves.
+    if (course.driveFolderId) {
+        try {
+            const bound = await adminDriveService.getFile(course.driveFolderId);
+            if (bound.mimeType === "application/vnd.google-apps.folder") {
+                folderId = course.driveFolderId;
+            }
+        }
+        catch {
+            folderId = null;
+        }
+    }
     try {
-        folderId = await adminDriveService.ensureCoursePath(course.level, course.semester, course.courseCode, course.title);
+        if (!folderId) {
+            folderId = await adminDriveService.ensureCoursePath(course.level, course.semester, course.courseCode, course.title);
+        }
     }
     catch (driveErr) {
         console.error("Drive folder creation failed:", driveErr);
         return next(new utils_1.ErrorResponse("Failed to create Drive folder structure. Check that an admin has connected Google.", 500));
+    }
+    // Bind the resolved folder so the next upload skips name matching.
+    if (course.driveFolderId !== folderId) {
+        course.driveFolderId = folderId;
+        try {
+            await course.save();
+        }
+        catch (saveErr) {
+            console.error("Failed to bind course Drive folder:", saveErr);
+        }
     }
     // Upload file to Drive
     let uploadResult;

@@ -23,6 +23,11 @@ const CourseSchema = new mongoose_1.Schema({
         required: false,
         match: [/^[A-Z]+$/, 'School prefix must be letters only']
     },
+    driveFolderId: {
+        type: String,
+        required: false,
+        trim: true,
+    },
     departments: {
         type: [mongoose_1.Schema.Types.ObjectId],
         ref: 'Department',

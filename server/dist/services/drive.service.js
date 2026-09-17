@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DriveService = void 0;
+exports.driveServiceForServiceAccount = driveServiceForServiceAccount;
 exports.driveServiceForUser = driveServiceForUser;
 exports.driveServiceForAdmin = driveServiceForAdmin;
 const googleapis_1 = require("googleapis");
@@ -42,18 +43,50 @@ function matchesSemesterFolder(name, semester) {
 }
 /**
  * Google Drive service.
- * All Drive access (reads/sync + writes) runs as the library admin's Google
- * account via OAuth (drive.file): the first admin to sign in with Google
- * connects the shared library Drive, and their stored refresh token is
- * reused server-side. This keeps single ownership/quota regardless of who
- * uploads. Use driveServiceForUser()/driveServiceForAdmin() to construct.
+ * Reads (sync walk, debug) run as the library service account, which sees
+ * every file inside the shared master folder by folder ACL. Writes (uploads)
+ * run as the connected admin's Google account via OAuth (drive.file) so the
+ * free-Gmail service account never hits a storage-quota 403. User-scoped
+ * flows (contributor pickers) reuse per-user OAuth tokens. Use
+ * driveServiceForServiceAccount()/driveServiceForAdmin()/driveServiceForUser()
+ * to construct.
  */
 class DriveService {
     drive;
+    authClient;
     rootFolderId;
     constructor(auth, rootFolderId) {
         this.drive = googleapis_1.google.drive({ version: "v3", auth });
+        this.authClient = auth;
         this.rootFolderId = rootFolderId ?? configs_1.ENVIRONMENT.DRIVE.ROOT_FOLDER_ID;
+    }
+    /**
+     * Mint a short-lived access token for the connected admin account.
+     * Handed to the browser for the Google Picker only: the picker proves
+     * the admin selected each file, and that selection grants the app
+     * per-file access under drive.file. The token itself carries no extra
+     * scope and expires on its own.
+     */
+    async getAccessToken() {
+        const client = this.authClient;
+        const { token } = await client.getAccessToken();
+        if (!token) {
+            throw new utils_1.ErrorResponse("Could not mint a Drive access token. Reconnect Google Drive and try again.", 503);
+        }
+        return token;
+    }
+    /**
+     * Fetch one file's metadata by ID. Works for picker-selected files
+     * (selection grants per-file access under drive.file). Throws the
+     * Drive 404/403 when the file was never granted to the app.
+     */
+    async getFile(fileId) {
+        const res = await this.drive.files.get({
+            fileId,
+            fields: "id, name, mimeType, parents, size",
+            supportsAllDrives: true,
+        });
+        return res.data;
     }
     /**
      * Ensure a folder path exists, creating intermediate folders as needed.
@@ -265,6 +298,27 @@ class DriveService {
     }
 }
 exports.DriveService = DriveService;
+/**
+ * Build a DriveService bound to the library service account. Scoped to
+ * drive.readonly on purpose (even when the folder share grants Editor) so
+ * the sync walk can never write. Sees everything inside the shared master
+ * folder by folder ACL — hand-dropped files included — and nothing else.
+ * Throws 503 when the SA credentials are not configured.
+ */
+function driveServiceForServiceAccount() {
+    const email = configs_1.ENVIRONMENT.DRIVE.SERVICE_ACCOUNT_EMAIL;
+    // .env stores the PEM with literal \n escapes; the JWT client needs real newlines.
+    const privateKey = (configs_1.ENVIRONMENT.DRIVE.SERVICE_ACCOUNT_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+    if (!email || !privateKey) {
+        throw new utils_1.ErrorResponse("Library service account is not configured. Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.", 503);
+    }
+    const jwtClient = new googleapis_1.google.auth.JWT({
+        email,
+        key: privateKey,
+        scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+    });
+    return new DriveService(jwtClient, configs_1.ENVIRONMENT.DRIVE.ROOT_FOLDER_ID);
+}
 /**
  * Build a DriveService bound to a user's Google OAuth refresh token.
  * googleapis refreshes access tokens automatically from the refresh token.
