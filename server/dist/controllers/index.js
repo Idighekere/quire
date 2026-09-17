@@ -22,3 +22,4 @@ __exportStar(require("./auth.controllers"), exports);
 __exportStar(require("./request.controllers"), exports);
 __exportStar(require("./upload.controllers"), exports);
 __exportStar(require("./sync.controllers"), exports);
+__exportStar(require("./user-drive.controllers"), exports);

@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.disconnectGoogleConnection = exports.getGoogleConnectionStatus = exports.googleAuthCallback = exports.googleAuthStart = exports.resetPassword = exports.forgotPassword = exports.register = exports.logout = exports.login = void 0;
 const configs_1 = require("../common/configs");
 const utils_1 = require("../common/utils");
+const constants_1 = require("../common/constants");
 const middlewares_1 = require("../middlewares");
 const models_1 = require("../models");
 const crypto_1 = __importDefault(require("crypto"));
@@ -221,13 +222,16 @@ const googleAuthCallback = (0, middlewares_1.catchAsync)(async (req, res) => {
     }
 });
 exports.googleAuthCallback = googleAuthCallback;
-// GET /api/v1/auth/google/status (admin) — whether any admin has a stored
-// Google Drive refresh token.
+// GET /api/v1/auth/google/status (admin) — whether any ADMIN has a stored
+// Google Drive refresh token. Uploads run as the admin account, so a token
+// on a non-admin record must NOT report connected (it previously did,
+// while every upload failed).
 const getGoogleConnectionStatus = (0, middlewares_1.catchAsync)(async (_req, res) => {
-    const connectedUser = await models_1.User.exists({
+    const connectedAdmin = await models_1.User.exists({
+        role: constants_1.Role.Admin,
         googleRefreshToken: { $exists: true, $ne: null },
     });
-    (0, utils_1.SuccessResponse)(res, 200, { connected: Boolean(connectedUser) }, "Drive connection status");
+    (0, utils_1.SuccessResponse)(res, 200, { connected: Boolean(connectedAdmin) }, "Drive connection status");
 });
 exports.getGoogleConnectionStatus = getGoogleConnectionStatus;
 // DELETE /api/v1/auth/google/connection — clears the CALLER's own stored

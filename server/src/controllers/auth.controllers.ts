@@ -1,5 +1,6 @@
 import { ENVIRONMENT } from "@/common/configs";
 import { clearCookie, comparePassword, ErrorResponse, generateTokens, hashData, hashPassword, setCookie, SuccessResponse } from "@/common/utils";
+import { Role } from "@/common/constants";
 import { catchAsync } from "@/middlewares";
 import { User } from "@/models";
 import { NextFunction, Request, Response } from "express";
@@ -299,14 +300,17 @@ const googleAuthCallback = catchAsync(async (req: Request, res: Response): Promi
     }
 })
 
-// GET /api/v1/auth/google/status (admin) — whether any admin has a stored
-// Google Drive refresh token.
+// GET /api/v1/auth/google/status (admin) — whether any ADMIN has a stored
+// Google Drive refresh token. Uploads run as the admin account, so a token
+// on a non-admin record must NOT report connected (it previously did,
+// while every upload failed).
 const getGoogleConnectionStatus = catchAsync(async (_req: Request, res: Response): Promise<void> => {
-    const connectedUser = await User.exists({
+    const connectedAdmin = await User.exists({
+        role: Role.Admin,
         googleRefreshToken: { $exists: true, $ne: null },
     });
 
-    SuccessResponse(res, 200, { connected: Boolean(connectedUser) }, "Drive connection status");
+    SuccessResponse(res, 200, { connected: Boolean(connectedAdmin) }, "Drive connection status");
 })
 
 // DELETE /api/v1/auth/google/connection — clears the CALLER's own stored
