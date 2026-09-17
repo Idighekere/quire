@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import ShareButton from '@/components/share-button'
 
 const accentWashes = [
   "bg-accent-lavender",
@@ -88,6 +89,13 @@ export default function DepartmentDetailPage() {
             <p className='mt-4 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground'>
               {department.associationName}
             </p>
+            <div className='mt-6 flex justify-center'>
+              <ShareButton
+                path={`/departments/${department.slug}`}
+                title={`${department.name} (${department.shortName}) — Uniuyo engineering on Quire`}
+                label='Share department'
+              />
+            </div>
           </div>
         </div>
       </section>

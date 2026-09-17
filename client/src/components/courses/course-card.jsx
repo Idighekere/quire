@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Book } from "@phosphor-icons/react"
 import { displayCourseCode } from "@/helpers/material-input"
+import ShareButton from "../share-button"
 
 
 export default function CourseCard({ course }) {
@@ -9,6 +10,8 @@ export default function CourseCard({ course }) {
   const handleViewBooks = () => {
     window.location.href = `/books?courseCode=${course.courseCode}&category=all&page=1`
   }
+
+  const materialsPath = `/books?courseCode=${course.courseCode}&category=all&page=1`
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden rounded-md border bg-card shadow-card transition-shadow duration-150 ease-nuesa hover:shadow-soft-lift">
@@ -31,11 +34,19 @@ export default function CourseCard({ course }) {
           </div>
         </div>
 
-        <div className="mt-5 pt-1">
-          <Button className="w-full" onClick={handleViewBooks}>
+        <div className="mt-5 flex gap-2 pt-1">
+          <Button className="flex-1" onClick={handleViewBooks}>
             <Book className="h-4 w-4" />
             View Materials
           </Button>
+          <ShareButton
+            iconOnly
+            variant="ghost"
+            className="border-0 shadow-none"
+            path={materialsPath}
+            title={`${displayCourseCode(course)} — ${course.title}: all study materials on Quire`}
+            label="Share this course"
+          />
         </div>
       </div>
     </div>

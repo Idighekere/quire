@@ -35,3 +35,4 @@ export { default as CoursesTable } from "./dashboard/courses-table"
 
 
 export {default as ErrorBoundary} from "./errors/error-boundary"
+export {default as ShareButton} from "./share-button"

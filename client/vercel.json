@@ -1,5 +1,18 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(whatsapp|facebookexternalhit|twitterbot|telegrambot|slackbot|linkedinbot|discordbot|embedly|quora\\ link\\ preview).*"
+        }
+      ],
+      "destination": "/api/og?path=/$1"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",

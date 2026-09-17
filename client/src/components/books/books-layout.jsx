@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, MagnifyingGlass as Search } from '@phosphor-icons/react'
 import { BookTabs } from '@/components'
+import ShareButton from '../share-button'
 import { useBookParams } from '@/contexts'
 
 const BooksLayout = ({ children, bookParams, updateBookParams }) => {
@@ -39,11 +40,20 @@ const BooksLayout = ({ children, bookParams, updateBookParams }) => {
           <span className='font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground'>
             Course materials
           </span>
-          <h1 className='text-3xl font-bold tracking-tighter sm:text-4xl'>
-            {bookParams.courseCode
-              ? `Materials for ${bookParams.courseCode}`
-              : 'Library Books'}
-          </h1>
+          <div className='flex flex-wrap items-center gap-3'>
+            <h1 className='text-3xl font-bold tracking-tighter sm:text-4xl'>
+              {bookParams.courseCode
+                ? `Materials for ${bookParams.courseCode}`
+                : 'Library Books'}
+            </h1>
+            <ShareButton
+              title={
+                bookParams.courseCode
+                  ? `Materials for ${bookParams.courseCode} on Quire`
+                  : 'Study materials on Quire'
+              }
+            />
+          </div>
 
           {/* Search Bar */}
           <form
