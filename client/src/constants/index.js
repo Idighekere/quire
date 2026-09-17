@@ -2,20 +2,22 @@ import {
   Book,
   Calendar,
   Clock,
-  Download,
+  DownloadSimple as Download,
   FileText,
   GraduationCap,
-  Library,
-  Search,
-  Wheat,
-  FlaskConical,
-  Building2,
+  Books as Library,
+  MagnifyingGlass as Search,
+  Plant as Wheat,
+  Flask as FlaskConical,
+  Building as Building2,
   Cpu,
-  Zap,
-  UtensilsCrossed,
-  Cog,
-  Fuel,
-} from "lucide-react"
+  Lightning as Zap,
+  ForkKnife as UtensilsCrossed,
+  Gear as Cog,
+  GasCan as Fuel,
+} from "@phosphor-icons/react"
+
+export * from "./branding"
 
 export const departments=[
     {
