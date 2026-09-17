@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const constants_1 = require("../common/constants");
+const utils_1 = require("../common/utils");
 const CourseSchema = new mongoose_1.Schema({
     title: {
         type: String,
@@ -13,12 +14,21 @@ const CourseSchema = new mongoose_1.Schema({
         unique: true,
         uppercase: true,
         trim: true,
-        match: [/^[A-Z]{3}[0-9]{3}$/, 'Please enter a valid course code']
+        match: [constants_1.COURSE_CODE_REGEX, 'Please enter a valid course code (e.g. GET211: 3 letters + level 1-5 + semester 1-2 + digit)']
+    },
+    codePrefix: {
+        type: String,
+        uppercase: true,
+        trim: true,
+        required: false,
+        match: [/^[A-Z]+$/, 'School prefix must be letters only']
     },
     departments: {
         type: [mongoose_1.Schema.Types.ObjectId],
         ref: 'Department',
-        required: true
+        // Sync-imported courses start department-less until an admin assigns
+        // them. App-side flows still enforce at least one department.
+        default: []
     },
     level: {
         type: Number,
@@ -36,5 +46,20 @@ const CourseSchema = new mongoose_1.Schema({
         required: true
     }
 });
+// Normalize code (strip ALL whitespace, uppercase) and auto-derive
+// level + semester from the code before validation runs.
+CourseSchema.pre('validate', function (next) {
+    const doc = this;
+    if (doc.courseCode && typeof doc.courseCode === 'string') {
+        doc.courseCode = (0, utils_1.normalizeCourseCode)(doc.courseCode);
+        const derived = (0, utils_1.deriveLevelSemesterFromCourseCode)(doc.courseCode);
+        if (derived) {
+            doc.level = derived.level;
+            doc.semester = derived.semester;
+        }
+    }
+    next();
+});
+CourseSchema.index({ level: 1, semester: 1 });
 const Course = (0, mongoose_1.model)('Course', CourseSchema);
 exports.default = Course;

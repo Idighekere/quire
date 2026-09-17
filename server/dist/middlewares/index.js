@@ -17,3 +17,4 @@ Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./globalErrorHandler"), exports);
 __exportStar(require("./catchAsync"), exports);
 __exportStar(require("./auth.middleware"), exports);
+__exportStar(require("./optionalAuth"), exports);

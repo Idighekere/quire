@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.connectToDatabase = void 0;
+exports.isDatabaseConnected = exports.connectToDatabase = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const environment_config_1 = require("./environment.config");
 const uri = environment_config_1.ENVIRONMENT.DB.URI || "mongodb://localhost:27017/faculty-library";
@@ -32,3 +32,12 @@ const connectToDatabase = async () => {
     return cached.conn;
 };
 exports.connectToDatabase = connectToDatabase;
+/**
+ * Synchronous, allocation-free read of the driver state.
+ * Lets request middleware skip work entirely when the
+ * startup-time connection is already up.
+ */
+const isDatabaseConnected = () => {
+    return mongoose_1.default.connection.readyState === 1;
+};
+exports.isDatabaseConnected = isDatabaseConnected;

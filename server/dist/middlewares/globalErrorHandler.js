@@ -33,11 +33,18 @@ const castErrorHandler = (err) => {
     return new errorResponse_1.default(errMessage, 400);
 };
 const duplicateKeyHandler = (err) => {
-    const name = err.keyValue.name;
-    const errMessage = `${name} already exist. Please try another`;
+    const keyValue = err.keyValue || {};
+    const field = Object.keys(keyValue)[0];
+    const value = field ? keyValue[field] : '';
+    const errMessage = field
+        ? `${field} '${value}' already exists.`
+        : `Duplicate value already exists. Please try another`;
     return new errorResponse_1.default(errMessage, 409);
 };
 const validationErrorHandler = (err) => {
+    const firstField = Object.keys(err.errors || {})[0];
+    const firstMessage = firstField ? err.errors[firstField]?.message : undefined;
+    return new errorResponse_1.default(firstMessage || "Invalid input. Please check your data.", 400);
 };
 const JWTtokenErrorHandler = (err) => {
     return new errorResponse_1.default('Invalid token. Please login again!', 401);

@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearCookie = exports.generateTokens = exports.getDepartmentShortName = exports.extractDriveFileId = exports.setCookie = exports.hashData = exports.verifyToken = exports.comparePassword = exports.hashPassword = void 0;
+exports.slugify = exports.buildDriveDownloadUrl = exports.buildDrivePreviewUrl = exports.splitCourseCodePrefix = exports.deriveLevelSemesterFromCourseCode = exports.normalizeCourseCode = exports.clearCookie = exports.generateTokens = exports.getDepartmentShortName = exports.extractDriveFileId = exports.setCookie = exports.hashData = exports.verifyToken = exports.comparePassword = exports.hashPassword = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const configs_1 = require("../configs");
+const constants_1 = require("../constants");
 const hashPassword = async (password) => {
     return await bcryptjs_1.default.hash(password, 12);
 };
@@ -63,6 +64,63 @@ const extractDriveFileId = (url) => {
     return match ? match[1] : null;
 };
 exports.extractDriveFileId = extractDriveFileId;
+/**
+ * Normalize a course code: strip ALL whitespace, uppercase.
+ * "get 211" → "GET211", "Get211" → "GET211"
+ */
+const normalizeCourseCode = (code) => {
+    if (!code)
+        return code;
+    // Strip whitespace, uppercase, and drop an optional "UUY-" school prefix
+    // ("UUY-CPE313" and "UUY - CPE313" both normalize to "CPE313").
+    return code.replace(/\s+/g, '').toUpperCase().replace(/^UUY-/, '');
+};
+exports.normalizeCourseCode = normalizeCourseCode;
+/**
+ * Split an optional school prefix (e.g. "UUY-") off a raw course code.
+ * Strips whitespace, uppercases, then splits a leading `<SCHOOL_CODE_PREFIX>-`.
+ * Returns the prefix (or null) plus the canonical `rest` code.
+ * "UUY-CPE313" → { prefix: "UUY", rest: "CPE313" }
+ */
+const splitCourseCodePrefix = (raw) => {
+    const cleaned = (raw || '').replace(/\s+/g, '').toUpperCase();
+    const tag = `${constants_1.SCHOOL_CODE_PREFIX}-`;
+    if (cleaned.startsWith(tag)) {
+        return { prefix: constants_1.SCHOOL_CODE_PREFIX, rest: cleaned.slice(tag.length) };
+    }
+    return { prefix: null, rest: cleaned };
+};
+exports.splitCourseCodePrefix = splitCourseCodePrefix;
+/**
+ * Derive level + semester from a normalized course code.
+ * Digit[0] (after 3 letters) = level: 1→100 ... 5→500
+ * Digit[1] = semester: 1→'1st', 2→'2nd'
+ * Returns null when the code doesn't match the pattern.
+ */
+const deriveLevelSemesterFromCourseCode = (code) => {
+    const normalized = normalizeCourseCode(code);
+    const match = normalized.match(/^[A-Z]{3}([1-5])([12])[0-9]$/);
+    if (!match)
+        return null;
+    return {
+        level: parseInt(match[1], 10) * 100,
+        semester: match[2] === '1' ? '1st' : '2nd',
+    };
+};
+exports.deriveLevelSemesterFromCourseCode = deriveLevelSemesterFromCourseCode;
+const buildDrivePreviewUrl = (fileId) => `https://drive.google.com/file/d/${fileId}/preview`;
+exports.buildDrivePreviewUrl = buildDrivePreviewUrl;
+const buildDriveDownloadUrl = (fileId) => `https://drive.google.com/uc?export=download&id=${fileId}`;
+exports.buildDriveDownloadUrl = buildDriveDownloadUrl;
+const slugify = (text) => {
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+};
+exports.slugify = slugify;
 const getDepartmentShortName = (name) => {
     if (name.includes('Computer')) {
         return 'CPE';

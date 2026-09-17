@@ -32,6 +32,10 @@ const UserSchema = new mongoose_1.Schema({
     refreshToken: {
         type: String,
         select: false
+    },
+    googleRefreshToken: {
+        type: String,
+        select: false
     }
 });
 const User = (0, mongoose_1.model)('User', UserSchema);

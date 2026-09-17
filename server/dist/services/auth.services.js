@@ -6,7 +6,6 @@ const utils_1 = require("../common/utils");
 const models_1 = require("../models");
 const authenticate = async ({ accessToken, refreshToken }) => {
     const isProd = configs_1.ENVIRONMENT?.APP.ENV === "production";
-    console.log(accessToken);
     if (!refreshToken) {
         throw new utils_1.ErrorResponse(`${isProd ? "Unauthorized" : "No refresh token provided"}`, 401);
     }

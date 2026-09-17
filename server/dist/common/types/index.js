@@ -18,5 +18,6 @@ __exportStar(require("./user.types"), exports);
 __exportStar(require("./course.types"), exports);
 __exportStar(require("./book.types"), exports);
 __exportStar(require("./department.types"), exports);
+__exportStar(require("./request.types"), exports);
 __exportStar(require("./auth.types"), exports);
 __exportStar(require("./environment.types"), exports);

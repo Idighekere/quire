@@ -19,3 +19,6 @@ __exportStar(require("./user.controllers"), exports);
 __exportStar(require("./book.controllers"), exports);
 __exportStar(require("./course.controllers"), exports);
 __exportStar(require("./auth.controllers"), exports);
+__exportStar(require("./request.controllers"), exports);
+__exportStar(require("./upload.controllers"), exports);
+__exportStar(require("./sync.controllers"), exports);

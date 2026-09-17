@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+const utils_1 = require("../common/utils");
 const mongoose_1 = __importStar(require("mongoose"));
 const DepartmentSchema = new mongoose_1.Schema({
     name: {
@@ -59,8 +60,29 @@ const DepartmentSchema = new mongoose_1.Schema({
         type: String,
         default: "", uppercase: true,
         trim: true,
+        unique: true,
         match: [/^[A-Z]{2,3}$/, 'Please enter a valid short name'],
+    },
+    slug: {
+        type: String,
+        unique: true,
+        trim: true,
+        lowercase: true,
     }
 }, { timestamps: true });
+// Auto-fill shortName + slug from name when not provided
+DepartmentSchema.pre('validate', function (next) {
+    const doc = this;
+    if (doc.name && !doc.slug) {
+        doc.slug = (0, utils_1.slugify)(doc.name);
+    }
+    if (doc.name && !doc.shortName) {
+        doc.shortName = (0, utils_1.getDepartmentShortName)(doc.name);
+    }
+    if (doc.shortName && typeof doc.shortName === 'string') {
+        doc.shortName = doc.shortName.trim().toUpperCase();
+    }
+    next();
+});
 const Department = mongoose_1.default.model('Department', DepartmentSchema);
 exports.default = Department;
