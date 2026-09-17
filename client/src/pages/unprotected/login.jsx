@@ -21,7 +21,8 @@ import toast from 'react-hot-toast'
 const GOOGLE_ERROR_MESSAGES = {
   google_not_configured: 'Google sign-in is not set up on the server yet.',
   google_failed: 'Google sign-in failed. Please try again.',
-  google_no_email: 'Could not verify an email address with Google.'
+  google_no_email: 'Could not verify an email address with Google.',
+  google_no_offline: 'Google did not grant Drive access. Pick the account matching your admin email and tick all permission boxes, then try again.'
 }
 
 function LoginPage () {

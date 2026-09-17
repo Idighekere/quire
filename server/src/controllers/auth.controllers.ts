@@ -187,7 +187,11 @@ const googleAuthStart = catchAsync(async (req: Request, res: Response, next: Nex
     const authUrlOptions: Record<string, unknown> = {
         scope: wantDrive ? [...GOOGLE_OAUTH_SCOPES, GOOGLE_DRIVE_SCOPE] : GOOGLE_OAUTH_SCOPES,
         state,
-        prompt: "select_account",
+        // Drive connects need a refresh token every time: Google only
+        // issues one on a fresh consent, so select_account alone silently
+        // returns none when the account already consented (the "still says
+        // connect" loop). Regular sign-ins keep select_account only.
+        prompt: wantDrive ? "consent" : "select_account",
     };
     if (wantDrive) {
         authUrlOptions.access_type = "offline";
@@ -213,11 +217,13 @@ const googleAuthCallback = catchAsync(async (req: Request, res: Response): Promi
     // it, keeping backward compatibility with previously issued states).
     let returnOrigin = defaultOrigin;
     let stateToken: string | null = null;
+    let isDriveFlow = false;
     if (typeof state === "string") {
         const segments = state.split(".");
         stateToken = segments[0] || null;
         const rest = segments.slice(1);
         if (rest[0] === "drive") {
+            isDriveFlow = true;
             rest.shift();
         }
         if (rest.length > 0) {
@@ -274,6 +280,12 @@ const googleAuthCallback = catchAsync(async (req: Request, res: Response): Promi
 
         if (tokens.refresh_token) {
             user.googleRefreshToken = tokens.refresh_token;
+        } else if (isDriveFlow) {
+            // Drive connects are useless without offline access. Fail
+            // loudly instead of redirecting "successfully" while staying
+            // disconnected.
+            fail("google_no_offline");
+            return;
         }
 
         const accessToken = generateTokens.access(
