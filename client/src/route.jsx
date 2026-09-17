@@ -1,29 +1,36 @@
+import { lazy, Suspense } from 'react'
 import { AuthLayout, ErrorBoundary, HomeSharedLayout, ProtectedRoute } from './components'
+import Preloader from '@/components/ui/preloader'
 import {
   Home,
-  CoursesPage,
-  BooksPage,
-  RegisterPage,
-  LoginPage,
   CustomErrorPage,
   ErrorPage,
-  DepartmentsPage,
-  DepartmentDetailPage,
-  ContactPage,
-  AboutPage,
-  MaterialsArchivePage
 } from './pages/unprotected'
 import {
   AuthProvider,
   BookSearchProvider,
   CourseSearchParamsProvider
 } from './contexts'
-import {
-  DashboardBooksPage,
-  DashboardCoursesPage,
-  DashboardLayout,
-  DashboardHome
-} from '@/pages/protected'
+import { DashboardLayout } from '@/pages/protected'
+
+const CoursesPage = lazy(() => import('./pages/unprotected/courses'))
+const BooksPage = lazy(() => import('./pages/unprotected/books'))
+const RegisterPage = lazy(() => import('./pages/unprotected/register'))
+const LoginPage = lazy(() => import('./pages/unprotected/login'))
+const DepartmentsPage = lazy(() => import('./pages/unprotected/departments'))
+const DepartmentDetailPage = lazy(() => import('./pages/unprotected/department-detail'))
+const ContactPage = lazy(() => import('./pages/unprotected/contact'))
+const AboutPage = lazy(() => import('./pages/unprotected/about'))
+const PrivacyPage = lazy(() => import('./pages/unprotected/privacy'))
+const MaterialsArchivePage = lazy(() => import('./pages/unprotected/materials'))
+const RequestsPage = lazy(() => import('./pages/unprotected/requests'))
+const DashboardBooksPage = lazy(() => import('@/pages/protected/dashboard-books'))
+const DashboardCoursesPage = lazy(() => import('@/pages/protected/dashboard-courses'))
+const DashboardHome = lazy(() => import('@/pages/protected/dashboard-home'))
+const DashboardModerationPage = lazy(() => import('@/pages/protected/dashboard-moderation'))
+
+const SuspenseFallback = () => <Preloader />
+const withSuspense = (node) => <Suspense fallback={<SuspenseFallback />}>{node}</Suspense>
 
 export const createAppRoutes = () => [
   {
@@ -33,7 +40,7 @@ export const createAppRoutes = () => [
       { path: '/', element: <Home />, errorElement: <ErrorPage /> },
       {
         path: '/courses',
-        element: (
+        element: withSuspense(
           <CourseSearchParamsProvider>
             <CoursesPage />
           </CourseSearchParamsProvider>
@@ -43,7 +50,7 @@ export const createAppRoutes = () => [
 
       {
         path: '/books',
-        element: (
+        element: withSuspense(
           <BookSearchProvider>
             <BooksPage />
           </BookSearchProvider>
@@ -52,27 +59,37 @@ export const createAppRoutes = () => [
       },
       {
         path: '/departments',
-        element: <DepartmentsPage />,
+        element: withSuspense(<DepartmentsPage />),
         errorElement: <ErrorPage />
       },
       {
         path: '/departments/:slug',
-        element: <DepartmentDetailPage />,
+        element: withSuspense(<DepartmentDetailPage />),
         errorElement: <ErrorPage />
       },
       {
         path: '/contact',
-        element: <ContactPage />,
+        element: withSuspense(<ContactPage />),
         errorElement: <ErrorPage />
       },
       {
         path: '/about',
-        element: <AboutPage />,
+        element: withSuspense(<AboutPage />),
+        errorElement: <ErrorPage />
+      },
+      {
+        path: '/privacy',
+        element: withSuspense(<PrivacyPage />),
         errorElement: <ErrorPage />
       },
       {
         path: '/materials',
-        element: <MaterialsArchivePage />,
+        element: withSuspense(<MaterialsArchivePage />),
+        errorElement: <ErrorPage />
+      },
+      {
+        path: '/requests',
+        element: withSuspense(<RequestsPage />),
         errorElement: <ErrorPage />
       },
       {
@@ -97,12 +114,12 @@ export const createAppRoutes = () => [
 
       {
         path: '/auth/login',
-        element: <LoginPage />
+        element: withSuspense(<LoginPage />)
 
       },
       {
         path: '/auth/register',
-        element: <RegisterPage />
+        element: withSuspense(<RegisterPage />)
       }
         ]
       },
@@ -118,7 +135,7 @@ export const createAppRoutes = () => [
     children: [
       {
         path: '/dashboard/',
-        element: (
+        element: withSuspense(
           <ProtectedRoute allowedRoles={['admin', 'uploader']}>
             <DashboardHome />
           </ProtectedRoute>
@@ -126,7 +143,7 @@ export const createAppRoutes = () => [
       },
       {
         path: 'books',
-        element: (
+        element: withSuspense(
           <ProtectedRoute allowedRoles={['admin', 'uploader']}>
             <DashboardBooksPage />
           </ProtectedRoute>
@@ -134,9 +151,17 @@ export const createAppRoutes = () => [
       },
       {
         path: 'courses',
-        element: (
+        element: withSuspense(
           <ProtectedRoute allowedRoles={['admin']}>
             <DashboardCoursesPage />{' '}
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: 'moderation',
+        element: withSuspense(
+          <ProtectedRoute allowedRoles={['admin']}>
+            <DashboardModerationPage />
           </ProtectedRoute>
         )
       }

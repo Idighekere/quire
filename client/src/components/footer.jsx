@@ -1,51 +1,62 @@
 import React from "react";
-import { Book } from "lucide-react";
+import { Books } from "@phosphor-icons/react";
 import { departments } from "@/constants";
 import { Link } from "react-router-dom";
+import { QuireMark } from "@/components/brand/quire-logo";
+import { BRAND_NAME, BRAND_DESCRIPTION } from "@/constants/branding";
 
 const footerQuickLinks = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
-  { href: "/courses", label: "Courses" },
-  { href: "/departments", label: "Departments" },
+  { to: "/", label: "Home" },
+  { to: "/courses", label: "Courses" },
+  { to: "/departments", label: "Departments" },
+  { to: "/materials", label: "Materials Archive" },
+  { to: "/requests", label: "Requests" },
+  { to: "/about", label: "About" },
+  { to: "/contact", label: "Contact" },
+  { to: "/privacy", label: "Privacy Policy" },
 ];
 
 export default function Footer({
-  siteTitle = "UNIUYO Engineering Library",
-  logo = (
-    <img src="/nuesa-logo.png" alt="NUESA UNIUYO Logo" className="w-10 h-10" />
-  ),
-  description = "Providing comprehensive resources and services to support engineering education, research, and innovation across all departments.",
+  siteTitle = BRAND_NAME,
+  logo = <QuireMark size={40} className="shrink-0" />,
+  description = BRAND_DESCRIPTION,
   developerName = "Idighekere Udo",
-  developerUrl = "https://idighekereudo.netlify.app",
+  developerUrl = "https://idighekere.vercel.app",
 }) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="w-full bg-muted py-12 border-t flex flex-col items-center md:px-12 lg:px-16">
-      <div className="container px-4 md:px-6">
-        <div className="flex grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 justify-center">
-          {/* Logo, site title and description */}
-          <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-2 justify-center">
-              {/* {logo} */}
-              <span className="font-bold text-lg">{siteTitle}</span>
+    <footer className="w-full border-t bg-muted">
+      <div className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-16">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+          {/* Brand */}
+          <div className="space-y-4 lg:col-span-2 lg:pr-12">
+            <Link to="/" className="flex items-center gap-2.5">
+              {logo}
+              <span className="font-bold tracking-tight">{siteTitle}</span>
             </Link>
-            <p className="text-muted-foreground text-sm text-center">
+            <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
               {description}
             </p>
+            <div className="inline-flex items-center gap-2 rounded-full bg-card px-4 py-2 text-xs text-muted-foreground shadow-card">
+              <Books weight="bold" className="h-4 w-4 text-primary" />
+              <span className="font-mono uppercase tracking-[0.09em]">
+                Engineering resources, curated
+              </span>
+            </div>
           </div>
 
           {/* Quick Links */}
-          <div className="hidden">
-            <h3 className="font-semibold text-lg mb-4">Quick Links</h3>
-            <ul className="space-y-2">
+          <div>
+            <h3 className="mb-4 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground">
+              Quick Links
+            </h3>
+            <ul className="space-y-2.5">
               {footerQuickLinks.map((link) => (
                 <li key={link.label}>
                   <Link
-                    href={`${link.href}`}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    to={link.to}
+                    className="text-sm text-foreground/80 transition-colors hover:text-primary"
                   >
                     {link.label}
                   </Link>
@@ -55,15 +66,16 @@ export default function Footer({
           </div>
 
           {/* Departments */}
-          <div className="hidden">
-            <h3 className="font-semibold text-lg mb-4">Departments</h3>
-            <ul className="space-y-2">
+          <div>
+            <h3 className="mb-4 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground">
+              Departments
+            </h3>
+            <ul className="space-y-2.5">
               {departments.map((dept) => (
                 <li key={dept.id}>
                   <Link
-                    href={`/departments/${dept.id}`}
-                    key={dept.id}
-                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    to={`/departments/${dept.slug}`}
+                    className="text-sm text-foreground/80 transition-colors hover:text-primary"
                   >
                     {dept.name}
                   </Link>
@@ -71,70 +83,23 @@ export default function Footer({
               ))}
             </ul>
           </div>
-
-          {/* Resources */}
-          {/* <div>
-            <h3 className="font-semibold text-lg mb-4">Resources</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/resources/journals"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Journals & Publications
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/resources/ebooks"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  E-Books
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/resources/research"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Research Papers
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/resources/software"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Software & Tools
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/resources/faq"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  FAQ
-                </Link>
-              </li>
-            </ul>
-          </div> */}
         </div>
 
         {/* Copyright and developer info */}
-        <div className="mt-12 pt-6 border-t flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-6 md:flex-row">
           <p className="text-sm text-muted-foreground">
             &copy; {currentYear} {siteTitle}. All rights reserved.
           </p>
-          <p className="text-sm text-muted-foreground text-center">
+          <p className="text-center text-sm text-muted-foreground">
             Developed by{" "}
             <a
               href={developerUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium hover:underline"
+              className="font-medium text-foreground hover:underline"
             >
               {developerName}
-            </a>{" "}
+            </a>
           </p>
         </div>
       </div>
