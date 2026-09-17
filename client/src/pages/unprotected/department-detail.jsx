@@ -1,20 +1,28 @@
-import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, BookOpen, Briefcase, CheckCircle2, GraduationCap, Users } from 'lucide-react'
+import { useParams, Link } from 'react-router-dom'
+import { ArrowLeft, ArrowRight, BookOpen, Briefcase, CheckCircle as CheckCircle2, GraduationCap, Users } from "@phosphor-icons/react"
 import { departments } from '@/constants'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+
+const accentWashes = [
+  "bg-accent-lavender",
+  "bg-accent-mint",
+  "bg-accent-sand",
+  "bg-accent-sky",
+  "bg-accent-blush",
+]
 
 export default function DepartmentDetailPage() {
   const { slug } = useParams()
-  const navigate = useNavigate()
-  
+
   const department = departments.find(dept => dept.slug === slug)
-  
+
   if (!department) {
     return (
-      <div className='min-h-screen bg-muted/30 flex items-center justify-center px-4'>
-        <Card className='max-w-md w-full text-center'>
+      <div className='flex min-h-screen items-center justify-center px-4'>
+        <Card className='w-full max-w-md text-center shadow-card'>
           <CardHeader>
             <CardTitle className='text-2xl'>Department Not Found</CardTitle>
             <CardDescription>
@@ -36,47 +44,48 @@ export default function DepartmentDetailPage() {
 
   const Icon = department.icon
   const currentIndex = departments.findIndex(d => d.slug === slug)
+  const wash = accentWashes[currentIndex % accentWashes.length]
   const prevDept = currentIndex > 0 ? departments[currentIndex - 1] : null
   const nextDept = currentIndex < departments.length - 1 ? departments[currentIndex + 1] : null
 
   return (
-    <div className='min-h-screen bg-muted/30'>
+    <div className='min-h-screen'>
       {/* Hero Section */}
-      <section className={`w-full py-12 md:py-20 bg-muted/40 bg-[url("/hero-ciircuit-pattern.svg")]`}>
-        <div className='container px-4 md:px-6 mx-auto'>
+      <section className='w-full px-4 pb-16 pt-16 md:px-8 md:pb-20 md:pt-20'>
+        <div className='mx-auto max-w-7xl'>
           {/* Breadcrumb */}
-          <nav className='mb-6'>
-            <ol className='flex items-center gap-2 text-sm text-muted-foreground'>
+          <nav className='mb-10'>
+            <ol className='flex flex-wrap items-center gap-2 text-sm'>
               <li>
-                <Link to='/' className='hover:text-foreground transition-colors'>
+                <Link to='/' className='text-muted-foreground transition-colors hover:text-foreground'>
                   Home
                 </Link>
               </li>
-              <li>/</li>
+              <li aria-hidden className='text-muted-foreground/50'>/</li>
               <li>
-                <Link to='/departments' className='hover:text-foreground transition-colors'>
+                <Link to='/departments' className='text-muted-foreground transition-colors hover:text-foreground'>
                   Departments
                 </Link>
               </li>
-              <li>/</li>
-              <li className='text-foreground font-medium'>{department.shortName}</li>
+              <li aria-hidden className='text-muted-foreground/50'>/</li>
+              <li className='font-medium'>{department.shortName}</li>
             </ol>
           </nav>
 
-          <div className='flex flex-col items-center space-y-4 text-center'>
-            <div className={`p-4 rounded-full ${department.color} text-white`}>
-              <Icon className='h-12 w-12' />
+          <div className='flex flex-col items-center text-center'>
+            <div className='mb-6 flex flex-col items-center gap-4'>
+              <div className={cn('flex size-16 items-center justify-center rounded-md', wash, 'text-foreground')}>
+                <Icon weight='bold' className='h-8 w-8' />
+              </div>
+              <Badge className='font-mono'>{department.shortName}</Badge>
             </div>
-            <Badge variant='outline' className='font-mono text-lg px-4 py-1'>
-              {department.shortName}
-            </Badge>
-            <h1 className='text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl max-w-4xl'>
+            <h1 className='max-w-4xl text-4xl font-bold leading-[1.05] tracking-tighter sm:text-5xl md:text-6xl'>
               {department.name}
             </h1>
-            <p className='max-w-[800px] text-muted-foreground md:text-xl'>
+            <p className='mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl'>
               {department.description}
             </p>
-            <p className='text-sm text-muted-foreground'>
+            <p className='mt-4 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground'>
               {department.associationName}
             </p>
           </div>
@@ -84,18 +93,16 @@ export default function DepartmentDetailPage() {
       </section>
 
       {/* Main Content */}
-      <section className='w-full py-12 md:py-16 px-4 md:px-12 lg:px-16'>
-        <div className='container mx-auto'>
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+      <section className='w-full bg-muted/50 px-4 py-14 md:px-8 md:py-20'>
+        <div className='mx-auto max-w-7xl'>
+          <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
             {/* Functions & Roles */}
-            <Card>
+            <Card className='shadow-card'>
               <CardHeader>
-                <div className='flex items-center gap-3'>
-                  <div className='p-2 rounded-lg bg-primary/10 text-primary'>
-                    <Briefcase className='h-5 w-5' />
-                  </div>
-                  <CardTitle>Key Functions & Roles</CardTitle>
+                <div className='mb-4 flex size-11 items-center justify-center rounded-md bg-accent-mint text-foreground'>
+                  <Briefcase weight='bold' className='h-5 w-5' />
                 </div>
+                <CardTitle>Key Functions & Roles</CardTitle>
                 <CardDescription>
                   Core areas of focus and responsibilities in {department.name}
                 </CardDescription>
@@ -104,8 +111,8 @@ export default function DepartmentDetailPage() {
                 <ul className='space-y-3'>
                   {department.functions.map((func, index) => (
                     <li key={index} className='flex items-start gap-3'>
-                      <CheckCircle2 className='h-5 w-5 text-primary mt-0.5 flex-shrink-0' />
-                      <span className='text-muted-foreground'>{func}</span>
+                      <CheckCircle2 weight='bold' className='mt-0.5 h-5 w-5 flex-shrink-0 text-primary' />
+                      <span className='leading-relaxed text-muted-foreground'>{func}</span>
                     </li>
                   ))}
                 </ul>
@@ -113,26 +120,24 @@ export default function DepartmentDetailPage() {
             </Card>
 
             {/* Career Paths */}
-            <Card>
+            <Card className='shadow-card'>
               <CardHeader>
-                <div className='flex items-center gap-3'>
-                  <div className='p-2 rounded-lg bg-primary/10 text-primary'>
-                    <GraduationCap className='h-5 w-5' />
-                  </div>
-                  <CardTitle>Career Opportunities</CardTitle>
+                <div className='mb-4 flex size-11 items-center justify-center rounded-md bg-accent-sky text-foreground'>
+                  <GraduationCap weight='bold' className='h-5 w-5' />
                 </div>
+                <CardTitle>Career Opportunities</CardTitle>
                 <CardDescription>
                   Potential career paths for {department.shortName} graduates
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+                <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
                   {department.careerPaths.map((career, index) => (
-                    <div 
-                      key={index} 
-                      className='flex items-center gap-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors'
+                    <div
+                      key={index}
+                      className='flex items-center gap-2.5 rounded-md border bg-card p-3 transition-shadow duration-150 ease-nuesa hover:shadow-soft-lift'
                     >
-                      <Users className='h-4 w-4 text-primary flex-shrink-0' />
+                      <Users weight='bold' className='h-4 w-4 flex-shrink-0 text-primary' />
                       <span className='text-sm font-medium'>{career}</span>
                     </div>
                   ))}
@@ -142,15 +147,15 @@ export default function DepartmentDetailPage() {
           </div>
 
           {/* CTA Section */}
-          <Card className='mt-8'>
+          <Card className='mt-4 shadow-card'>
             <CardContent className='py-8'>
-              <div className='flex flex-col md:flex-row items-center justify-between gap-6'>
-                <div className='flex items-center gap-4'>
-                  <div className='p-3 rounded-full bg-primary/10 text-primary'>
-                    <BookOpen className='h-6 w-6' />
+              <div className='flex flex-col items-center justify-between gap-6 md:flex-row'>
+                <div className='flex flex-col items-center gap-4 text-center md:flex-row md:text-left'>
+                  <div className='flex size-12 flex-shrink-0 items-center justify-center rounded-md bg-accent-sand text-foreground'>
+                    <BookOpen weight='bold' className='h-6 w-6' />
                   </div>
                   <div>
-                    <h3 className='text-lg font-semibold'>
+                    <h3 className='text-lg font-semibold tracking-tight'>
                       Browse {department.shortName} Course Materials
                     </h3>
                     <p className='text-muted-foreground'>
@@ -171,34 +176,34 @@ export default function DepartmentDetailPage() {
       </section>
 
       {/* Navigation between departments */}
-      <section className='w-full py-8 px-4 md:px-12 lg:px-16 border-t bg-muted/30'>
-        <div className='container mx-auto'>
-          <div className='flex flex-col sm:flex-row justify-between gap-4'>
+      <section className='w-full px-4 py-10 md:px-8'>
+        <div className='mx-auto max-w-7xl'>
+          <div className='flex flex-col gap-4 sm:flex-row sm:justify-between'>
             {prevDept ? (
-              <Link 
+              <Link
                 to={`/departments/${prevDept.slug}`}
-                className='flex items-center gap-3 p-4 rounded-lg border bg-background hover:bg-muted/50 transition-colors flex-1'
+                className='group flex flex-1 items-center gap-3 rounded-lg border bg-card p-4 shadow-card transition-shadow duration-150 ease-nuesa hover:shadow-soft-lift'
               >
-                <ArrowLeft className='h-5 w-5 text-muted-foreground' />
+                <ArrowLeft className='h-5 w-5 flex-shrink-0 text-muted-foreground transition-transform duration-150 ease-nuesa group-hover:-translate-x-0.5' />
                 <div>
-                  <p className='text-xs text-muted-foreground'>Previous</p>
+                  <p className='font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground'>Previous</p>
                   <p className='font-medium'>{prevDept.name}</p>
                 </div>
               </Link>
             ) : (
               <div className='flex-1' />
             )}
-            
+
             {nextDept && (
-              <Link 
+              <Link
                 to={`/departments/${nextDept.slug}`}
-                className='flex items-center justify-end gap-3 p-4 rounded-lg border bg-background hover:bg-muted/50 transition-colors flex-1 text-right'
+                className='group flex flex-1 items-center justify-end gap-3 rounded-lg border bg-card p-4 text-right shadow-card transition-shadow duration-150 ease-nuesa hover:shadow-soft-lift'
               >
                 <div>
-                  <p className='text-xs text-muted-foreground'>Next</p>
+                  <p className='font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground'>Next</p>
                   <p className='font-medium'>{nextDept.name}</p>
                 </div>
-                <ArrowRight className='h-5 w-5 text-muted-foreground' />
+                <ArrowRight className='h-5 w-5 flex-shrink-0 text-muted-foreground transition-transform duration-150 ease-nuesa group-hover:translate-x-0.5' />
               </Link>
             )}
           </div>

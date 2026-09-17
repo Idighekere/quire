@@ -1,4 +1,4 @@
-import {BookCard} from "@/components"
+import { BookCard } from "@/components"
 import { useBookParams } from "@/contexts"
 
 
@@ -6,7 +6,7 @@ import { useBookParams } from "@/contexts"
 const ITEMS_PER_PAGE = 6
 
 
-function BookResults({bookParams,  currentPage,booksData,error }) {
+function BookResults({ bookParams, currentPage, booksData, error }) {
 
   const { bookSearchText } = useBookParams()
 
@@ -14,16 +14,15 @@ function BookResults({bookParams,  currentPage,booksData,error }) {
   // Filter books based on category
   const filteredBooks = booksData?.filter((book) => {
 
+    const filteredCategories = bookParams.category === 'all' ? true : bookParams.category === book.category
 
-const filteredCategories=    bookParams.category==='all'?true:bookParams.category==book.category
+    // Filter books based
+    const searchedBooks = bookSearchText
+      ? book.title.toLowerCase().includes(bookSearchText.toLowerCase()) : true
 
-// Filter books based
- const searchedBooks= bookSearchText
- ? book.title.toLowerCase().includes(bookSearchText.toLowerCase()) :true
+    return filteredCategories && searchedBooks
 
-return filteredCategories && searchedBooks
-
-})
+  })
 
   // Calculate pagination
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
@@ -32,27 +31,28 @@ return filteredCategories && searchedBooks
 
   if (filteredBooks?.length === 0) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-xl font-semibold mb-2">No books found</h2>
-        <p className="text-muted-foreground">Try adjusting your search or selecting a different category.</p>
+      <div className="rounded-md border bg-card px-6 py-16 text-center shadow-card">
+        <h2 className="text-xl font-semibold tracking-tight">No books found</h2>
+        <p className="mt-2 text-muted-foreground">Try adjusting your search or selecting a different category.</p>
       </div>
     )
   }
 
-  if(error){
-    return (<div className='text-center py-12'>
-  <h2 className='text-xl font-semibold mb-2 /text-muted'>Something went wrong</h2>
-  <p className='/text-muted-foreground'>
-    {error.response.data.message}
-  </p>
-</div>
-)
+  if (error) {
+    return (
+      <div className="rounded-md border bg-card px-6 py-16 text-center shadow-card">
+        <h2 className="text-xl font-semibold tracking-tight">Something went wrong</h2>
+        <p className="mt-2 text-muted-foreground">
+          {error.response?.data?.message || "An unexpected error occurred."}
+        </p>
+      </div>
+    )
   }
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredBooks?.map((book) => (
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {paginatedBooks?.map((book) => (
           <BookCard key={book._id} book={book} />
         ))}
       </div>

@@ -10,6 +10,7 @@ export {default as ProtectedRoute} from "./protected-route"
 export {default as Hero} from "./home/hero"
 export {default as HowItWorks} from "./home/how-it-works"
 export {default as Features} from "./home/features"
+export {default as RecentlyAdded} from "./home/recently-added"
 
 
 export {default as CourseResults} from "./courses/course-results"

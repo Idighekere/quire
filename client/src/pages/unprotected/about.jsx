@@ -5,12 +5,12 @@ import {
   Target,
   Users,
   BookOpen,
-  CheckCircle2,
+  CheckCircle as CheckCircle2,
   ArrowRight,
   Code,
   GraduationCap,
   Info,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import {
   Card,
   CardContent,
@@ -83,18 +83,23 @@ const team = [
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen">
       {/* Hero Section */}
-      <section className='w-full py-12 md:py-20 bg-muted/40 bg-[url("/hero-ciircuit-pattern.svg")]'>
-        <div className="container px-4 md:px-6 mx-auto">
-          <div className="flex flex-col items-center space-y-4 text-center">
-            <div className="p-3 rounded-full bg-primary/10 text-primary">
-              <Heart className="h-10 w-10" />
+      <section className="w-full px-4 pb-16 pt-16 md:px-8 md:pb-20 md:pt-20">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-6 flex flex-col items-center gap-4">
+              <span className="inline-flex items-center gap-2 rounded-full bg-accent-blush px-4 py-1.5 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em]">
+                A student initiative
+              </span>
+              <div className="flex size-14 items-center justify-center rounded-md bg-card shadow-card">
+                <Heart weight="bold" className="h-7 w-7 text-primary" />
+              </div>
             </div>
-            <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+            <h1 className="max-w-3xl text-4xl font-bold leading-[1.05] tracking-tighter sm:text-5xl md:text-6xl">
               About This Project
             </h1>
-            <p className="max-w-[700px] text-muted-foreground md:text-xl">
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
               A student-built platform to help engineering students at the
               University of Uyo access study materials easily and efficiently.
             </p>
@@ -103,57 +108,50 @@ export default function AboutPage() {
       </section>
 
       {/* Disclaimer Section */}
-      <section className="w-full py-6 px-4 md:px-12 lg:px-16">
-        <div className="container mx-auto max-w-4xl">
-          <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex-shrink-0">
-                  <Info className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm text-amber-800 dark:text-amber-200">
-                    <strong>Disclaimer:</strong> This project was built as an
-                    independent student initiative before the official NUESA
-                    library was launched. For the official NUESA UNIUYO library,
-                    please visit{" "}
-                    <a
-                      href="https://example.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium underline hover:text-amber-600 dark:hover:text-amber-300"
-                    >
-                      the official NUESA library
-                    </a>
-                    .
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <section className="w-full px-4 pb-4 md:px-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="flex items-start gap-4 rounded-lg bg-accent-sand p-6 shadow-card">
+            <div className="flex size-11 flex-shrink-0 items-center justify-center rounded-md bg-card text-foreground">
+              <Info weight="bold" className="h-5 w-5" />
+            </div>
+            <p className="text-sm leading-relaxed text-foreground">
+              <strong>Disclaimer:</strong> This project was built as an
+              independent student initiative before the official NUESA library
+              was launched. For the official NUESA UNIUYO library, please visit{" "}
+              <a
+                href="https://example.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary"
+              >
+                the official NUESA library
+              </a>
+              .
+            </p>
+          </div>
         </div>
       </section>
 
       {/* Story Section */}
-      <section className="w-full py-12 md:py-16 px-4 md:px-12 lg:px-16">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-12">
-            <Badge variant="outline" className="mb-4">
-              Our Story
-            </Badge>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl mb-4">
+      <section className="w-full px-4 py-14 md:px-8 md:py-20">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-12 flex flex-col items-center gap-4 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-accent-sky px-4 py-1.5 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em]">
+              Our story
+            </span>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
               Why I Built This
             </h2>
           </div>
 
-          <Card className="mb-8">
+          <Card className="shadow-card">
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary flex-shrink-0">
-                  <Lightbulb className="h-6 w-6" />
+                <div className="flex size-11 flex-shrink-0 items-center justify-center rounded-md bg-accent-lavender text-foreground">
+                  <Lightbulb weight="bold" className="h-5 w-5" />
                 </div>
                 <div className="space-y-4">
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="leading-relaxed text-muted-foreground">
                     As a Computer Engineering student at the University of Uyo,
                     I experienced firsthand the struggles of finding study
                     materials. From chasing seniors for past questions to
@@ -161,7 +159,7 @@ export default function AboutPage() {
                     lecture notes, the process was frustrating and
                     time-consuming.
                   </p>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="leading-relaxed text-muted-foreground">
                     I realized that if I was facing this challenge, thousands of
                     other engineering students were too. That's when the idea
                     for UNIUYO Engineering Library was born - a centralized
@@ -169,7 +167,7 @@ export default function AboutPage() {
                     materials they need, organized by department, level, and
                     semester.
                   </p>
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="leading-relaxed text-muted-foreground">
                     This project is my way of giving back to the engineering
                     student community and making academic life just a little bit
                     easier for everyone.
@@ -182,30 +180,30 @@ export default function AboutPage() {
       </section>
 
       {/* Problem & Solution Section */}
-      <section className="w-full py-12 bg-muted/50 px-4 md:px-12 lg:px-16">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <section className="w-full bg-muted/50 px-4 py-14 md:px-8 md:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
             {/* Challenges */}
             <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
-                  <Target className="h-6 w-6" />
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex size-11 items-center justify-center rounded-md bg-accent-blush text-foreground">
+                  <Target weight="bold" className="h-5 w-5" />
                 </div>
-                <h2 className="text-2xl font-bold">The Challenges</h2>
+                <h2 className="text-2xl font-bold tracking-tight">The Challenges</h2>
               </div>
               <div className="space-y-4">
                 {challenges.map((challenge, index) => (
-                  <Card key={index}>
+                  <Card key={index} className="shadow-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-red-500/10 text-red-500 text-sm flex items-center justify-center font-bold">
+                      <CardTitle className="flex items-center gap-3 text-lg tracking-tight">
+                        <span className="flex size-7 items-center justify-center rounded-full bg-accent-blush font-mono text-sm font-medium">
                           {index + 1}
                         </span>
                         {challenge.title}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-sm leading-relaxed text-muted-foreground">
                         {challenge.description}
                       </p>
                     </CardContent>
@@ -216,25 +214,25 @@ export default function AboutPage() {
 
             {/* Solutions */}
             <div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-green-500/10 text-green-500">
-                  <CheckCircle2 className="h-6 w-6" />
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex size-11 items-center justify-center rounded-md bg-accent-mint text-foreground">
+                  <CheckCircle2 weight="bold" className="h-5 w-5" />
                 </div>
-                <h2 className="text-2xl font-bold">Our Solutions</h2>
+                <h2 className="text-2xl font-bold tracking-tight">Our Solutions</h2>
               </div>
               <div className="space-y-4">
                 {solutions.map((solution, index) => (
-                  <Card key={index}>
+                  <Card key={index} className="shadow-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-green-500/10 text-green-500 text-sm flex items-center justify-center font-bold">
+                      <CardTitle className="flex items-center gap-3 text-lg tracking-tight">
+                        <span className="flex size-7 items-center justify-center rounded-full bg-accent-mint font-mono text-sm font-medium">
                           {index + 1}
                         </span>
                         {solution.title}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-sm leading-relaxed text-muted-foreground">
                         {solution.description}
                       </p>
                     </CardContent>
@@ -247,52 +245,49 @@ export default function AboutPage() {
       </section>
 
       {/* Team Section */}
-      <section className="w-full py-12 md:py-16 px-4 md:px-12 lg:px-16">
-        <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-12">
-            <Badge variant="outline" className="mb-4">
-              The Team
-            </Badge>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl mb-4">
+      <section className="w-full px-4 py-14 md:px-8 md:py-20">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-12 flex flex-col items-center gap-4 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-accent-mint px-4 py-1.5 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em]">
+              The team
+            </span>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
               Meet the Creator
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
               Built with passion by engineering students, for engineering
               students.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {team.map((member, index) => (
-              <Card key={index} className="text-center">
+              <Card key={index} className="text-center shadow-card md:mx-auto md:w-full">
                 <CardHeader>
-                  <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="mx-auto mb-4 flex size-20 items-center justify-center rounded-full bg-accent-sky text-foreground">
                     {index === 0 ? (
-                      <Code className="h-10 w-10 text-primary" />
+                      <Code weight="bold" className="h-8 w-8 text-primary" />
                     ) : (
-                      <Users className="h-10 w-10 text-primary" />
+                      <Users weight="bold" className="h-8 w-8 text-primary" />
                     )}
                   </div>
                   <CardTitle className="text-xl">{member.name}</CardTitle>
-                  <CardDescription className="font-medium text-primary">
+                  <CardDescription className="font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-primary">
                     {member.role}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground text-sm mb-4">
+                  <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
                     {member.description}
                   </p>
                   {member.links && (
-                    <div className="flex justify-center gap-2 flex-wrap">
+                    <div className="flex flex-wrap justify-center gap-2">
                       <a
                         href={member.links.portfolio}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <Badge
-                          variant="secondary"
-                          className="cursor-pointer text-white hover:bg-primary hover:text-primary-foreground transition-colors"
-                        >
+                        <Badge className="cursor-pointer transition-colors hover:bg-primary hover:text-primary-foreground">
                           Portfolio
                         </Badge>
                       </a>
@@ -301,10 +296,7 @@ export default function AboutPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <Badge
-                          variant="secondary"
-                          className="cursor-pointer text-white hover:bg-primary hover:text-primary-foreground transition-colors"
-                        >
+                        <Badge className="cursor-pointer transition-colors hover:bg-primary hover:text-primary-foreground">
                           LinkedIn
                         </Badge>
                       </a>
@@ -313,10 +305,7 @@ export default function AboutPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <Badge
-                          variant="secondary"
-                          className="text-white cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                        >
+                        <Badge className="cursor-pointer transition-colors hover:bg-primary hover:text-primary-foreground">
                           Twitter
                         </Badge>
                       </a>
@@ -330,27 +319,32 @@ export default function AboutPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="w-full py-12 bg-primary/5 px-4 md:px-12 lg:px-16">
-        <div className="container mx-auto max-w-3xl text-center">
-          <div className="p-3 rounded-full bg-primary/10 text-primary inline-block mb-4">
-            <BookOpen className="h-8 w-8" />
+      <section className="w-full bg-muted/50 px-4 py-14 md:px-8 md:py-20">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="mb-6 flex flex-col items-center gap-4">
+            <div className="flex size-12 items-center justify-center rounded-md bg-card text-primary shadow-card">
+              <BookOpen weight="bold" className="h-6 w-6" />
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-accent-lavender px-4 py-1.5 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em]">
+              Get started
+            </span>
           </div>
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl mb-4">
+          <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
             Ready to Start Learning?
           </h2>
-          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+          <p className="mx-auto mb-8 mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground md:text-xl">
             Explore course materials from all eight engineering departments.
             Find textbooks, past questions, and lecture notes for your courses.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link to="/courses">
-              <Button size="lg">
+              <Button size="lg" className="w-full sm:w-auto">
                 Browse Courses
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <Link to="/departments">
-              <Button size="lg" variant="outline">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto">
                 <GraduationCap className="mr-2 h-4 w-4" />
                 Explore Departments
               </Button>

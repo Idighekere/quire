@@ -169,6 +169,35 @@ function PendingBooksQueue() {
 function DriveSyncPanel() {
   const [category, setCategory] = useState("textBook")
   const [result, setResult] = useState(null)
+  const queryClient = useQueryClient()
+
+  const { data: driveStatus } = useQuery({
+    queryKey: ["googleDriveStatus"],
+    queryFn: () => api.getGoogleDriveStatus(),
+    refetchOnMount: true,
+    retry: false,
+  })
+  const isDriveConnected = driveStatus?.data?.connected === true
+
+  const { mutate: disconnectDrive, isPending: isDisconnecting } = useMutation({
+    mutationFn: () => api.disconnectGoogleDrive(),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["googleDriveStatus"] })
+      toast.success(data?.message || "Google Drive disconnected")
+    },
+    onError: (err) =>
+      toast.error(
+        (err && err.response && err.response.data && err.response.data.message) ||
+          "Failed to disconnect Google Drive"
+      ),
+  })
+
+  const handleDisconnect = () => {
+    if (!window.confirm("Disconnect Google Drive? Uploads will stop working until an admin reconnects.")) {
+      return
+    }
+    disconnectDrive()
+  }
 
   const { mutate: runSync, isPending } = useMutation({
     mutationFn: () => api.syncDrive(category),
@@ -206,16 +235,32 @@ function DriveSyncPanel() {
         </p>
 
         <div className="flex flex-col gap-2 rounded-lg border border-border p-4">
-          <div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                window.location.href = `${ENVIRONMENT.APP.BASE_URL}/auth/google?drive=1&redirect=${encodeURIComponent(window.location.origin)}`
-              }}
-            >
-              Connect Google Drive
-            </Button>
-          </div>
+          {isDriveConnected ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-green-600">
+                <span className="h-2 w-2 rounded-full bg-green-500" aria-hidden="true" />
+                Drive connected
+              </span>
+              <Button
+                variant="outline"
+                onClick={handleDisconnect}
+                disabled={isDisconnecting}
+              >
+                {isDisconnecting ? "Disconnecting…" : "Disconnect"}
+              </Button>
+            </div>
+          ) : (
+            <div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  window.location.href = `${ENVIRONMENT.APP.BASE_URL}/auth/google?drive=1&redirect=${encodeURIComponent(window.location.origin)}`
+                }}
+              >
+                Connect Google Drive
+              </Button>
+            </div>
+          )}
           <p className="text-sm text-muted-foreground">
             Only an admin needs this, once — it lets uploads run as the
             library account.

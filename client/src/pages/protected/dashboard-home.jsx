@@ -1,8 +1,9 @@
-import { Book, BookOpen, Plus, Upload, Users } from "lucide-react"
+import { Book, BookOpen, Plus, UploadSimple as Upload, Users } from "@phosphor-icons/react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts"
+import { cn } from "@/lib/utils"
 
 /**
  * Welcome component for the dashboard home page
@@ -12,12 +13,15 @@ import { useAuth } from "@/contexts"
  */
 function DashboardHome() {
   const navigate = useNavigate()
-  const {user}=useAuth()
+  const { user } = useAuth()
   const isAdmin = user?.role === "admin"
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
+        <span className="font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground">
+          Dashboard
+        </span>
         <h1 className="text-3xl font-bold tracking-tight">Welcome, {user?.name || "User"}!</h1>
         <p className="text-muted-foreground">
           Manage your library resources and help students access educational materials.
@@ -47,12 +51,13 @@ function DashboardHome() {
       </div>
 
       {/* Quick Actions */}
-      <h2 className="text-xl font-semibold mt-8 mb-4">Quick Actions</h2>
+      <h2 className="mt-8 mb-4 text-xl font-semibold tracking-tight">Quick Actions</h2>
       <div className="grid gap-4 md:grid-cols-2">
         <ActionCard
           title="Manage Books"
           description="Upload, edit, or delete books from the library."
-          icon={<Book className="h-10 w-10 text-primary" />}
+          wash="bg-accent-lavender"
+          icon={<Book weight="bold" className="h-5 w-5 text-primary" />}
           actions={<Button onClick={() => navigate("/dashboard/books")}>Go to Books</Button>}
         />
 
@@ -60,14 +65,15 @@ function DashboardHome() {
           <ActionCard
             title="Manage Courses"
             description="Add, edit, or remove courses from the library."
-            icon={<BookOpen className="h-10 w-10 text-primary" />}
+            wash="bg-accent-mint"
+            icon={<BookOpen weight="bold" className="h-5 w-5 text-primary" />}
             actions={<Button onClick={() => navigate("/dashboard/courses")}>Go to Courses</Button>}
           />
         )}
       </div>
 
       {/* How To Guides */}
-      <h2 className="text-xl font-semibold mt-8 mb-4">How To Guides</h2>
+      <h2 className="mt-8 mb-4 text-xl font-semibold tracking-tight">How To Guides</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <GuideCard
           title="How to Add Books"
@@ -78,7 +84,8 @@ function DashboardHome() {
             "Provide a Google Drive link",
             "Submit the form",
           ]}
-          icon={<Plus className="h-5 w-5" />}
+          wash="bg-accent-lavender"
+          icon={<Plus weight="bold" className="h-5 w-5 text-primary" />}
           actionText="Add a Book"
           onAction={() => navigate("/dashboard/books")}
         />
@@ -93,7 +100,8 @@ function DashboardHome() {
               "Select departments, level, and semester",
               "Submit the form",
             ]}
-            icon={<Plus className="h-5 w-5" />}
+            wash="bg-accent-sky"
+            icon={<Plus weight="bold" className="h-5 w-5 text-primary" />}
             actionText="Add a Course"
             onAction={() => navigate("/dashboard/courses")}
           />
@@ -107,7 +115,8 @@ function DashboardHome() {
             "Copy the sharing link",
             "Use this link when adding a new book",
           ]}
-          icon={<Upload className="h-5 w-5" />}
+          wash="bg-accent-sand"
+          icon={<Upload weight="bold" className="h-5 w-5 text-primary" />}
           actionText="Learn More"
           onAction={() => window.open("https://support.google.com/drive/answer/2494822", "_blank")}
         />
@@ -137,12 +146,14 @@ function StatsCard({ title, value, description, icon }) {
 /**
  * Action card component with icon and buttons
  */
-function ActionCard({ title, description, icon, actions }) {
+function ActionCard({ title, description, wash, icon, actions }) {
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center gap-4">
-          {icon}
+          <div className={cn("flex size-11 flex-shrink-0 items-center justify-center rounded-md", wash, "text-foreground")}>
+            {icon}
+          </div>
           <div>
             <CardTitle>{title}</CardTitle>
             <CardDescription>{description}</CardDescription>
@@ -157,20 +168,25 @@ function ActionCard({ title, description, icon, actions }) {
 /**
  * Guide card component with steps
  */
-function GuideCard({ title, steps, icon, actionText, onAction }) {
+function GuideCard({ title, steps, wash, icon, actionText, onAction }) {
   return (
     <Card className="flex flex-col">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {icon}
+        <CardTitle className="flex items-center gap-3">
+          <div className={cn("flex size-9 flex-shrink-0 items-center justify-center rounded-md", wash, "text-foreground")}>
+            {icon}
+          </div>
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1">
-        <ol className="list-decimal pl-5 space-y-1">
+        <ol className="space-y-1.5">
           {steps.map((step, index) => (
-            <li key={index} className="text-sm text-muted-foreground">
-              {step}
+            <li key={index} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+              <span className="mt-px font-mono text-xs font-medium text-foreground/50">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className="leading-relaxed">{step}</span>
             </li>
           ))}
         </ol>
