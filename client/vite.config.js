@@ -16,4 +16,16 @@ export default defineConfig({
       '@/utils': '/src/utils',
     },
   },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          query: ['@tanstack/react-query'],
+          icons: ['@phosphor-icons/react'],
+        },
+      },
+    },
+  },
 })
