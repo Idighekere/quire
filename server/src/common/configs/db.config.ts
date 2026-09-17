@@ -27,3 +27,12 @@ export const connectToDatabase = async () => {
   }
   return cached.conn;
 };
+
+/**
+ * Synchronous, allocation-free read of the driver state.
+ * Lets request middleware skip work entirely when the
+ * startup-time connection is already up.
+ */
+export const isDatabaseConnected = (): boolean => {
+  return mongoose.connection.readyState === 1;
+};

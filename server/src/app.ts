@@ -6,6 +6,7 @@ if (process.env.NODE_ENV === "production") {
 
 import express, { NextFunction, Request, Response } from "express";
 import { globalErrorHandler } from "@/middlewares";
+import morgan from "morgan";
 import { ErrorResponse } from "@/common/utils";
 import cookie from "cookie-parser";
 import {
@@ -13,38 +14,53 @@ import {
   booksRoute,
   coursesRoute,
   departmentsRoute,
+  requestsRoute,
+  syncRoute,
+  uploadRoute,
   userRoutes,
 } from "@/routes";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import helmet, { HelmetOptions } from "helmet";
-import { connectToDatabase, ENVIRONMENT } from "./common/configs";
+import { connectToDatabase, isDatabaseConnected, ENVIRONMENT } from "./common/configs";
 import mongoSanitize from "express-mongo-sanitize";
 // import xss from 'xss-clean';
-import morgan from "morgan";
 
 const app = express();
+
+// Log all responses, including JSON parsing and database errors.
+app.use(morgan(ENVIRONMENT.APP.ENV !== "development" ? "combined" : "dev"));
 
 // Middleware to parse JSON and cookies
 app.use(express.json());
 app.use(cookie());
 
+// The server connects once at startup (see server.ts). This guard only
+// reconnects on serverless cold starts or after a dropped connection —
+// when already connected it is a synchronous readyState check.
 app.use(async (req, res, next) => {
   try {
-    await connectToDatabase();
+    if (!isDatabaseConnected()) {
+      await connectToDatabase();
+    }
     next();
   } catch (error) {
     res.status(500).json({ error: "Database connection failed" });
   }
 });
 // CORS configuration
+// Uses FRONTEND_ORIGINS when set, otherwise the previous hardcoded list.
+const FALLBACK_ORIGINS = [
+  "http://localhost:5173",
+  "http://192.168.44.119:5173",
+  "https://nuesa-library.loca.lt",
+  "https://faculty-library.netlify.app",
+];
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",
-    "http://192.168.44.119:5173",
-    "https://nuesa-library.loca.lt",
-    "https://faculty-library.netlify.app",
-  ],
+  origin:
+    ENVIRONMENT.APP.ALLOWED_ORIGINS.length > 0
+      ? ENVIRONMENT.APP.ALLOWED_ORIGINS
+      : FALLBACK_ORIGINS,
   credentials: true, // Allow credentials (cookies) to be sent and received
   optionsSuccessStatus: 200,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
@@ -68,6 +84,9 @@ const apiLimiter = rateLimit({
 app.use("/api/v1/courses", apiLimiter);
 app.use("/api/v1/books", apiLimiter);
 app.use("/api/v1/auth", apiLimiter);
+app.use("/api/v1/requests", apiLimiter);
+app.use("/api/v1/upload", apiLimiter);
+app.use("/api/v1/sync", apiLimiter);
 
 // Security headers configuration
 const helmetConfig: HelmetOptions = {
@@ -81,9 +100,6 @@ app.use(helmet(helmetConfig));
 // Data sanitization against NoSQL query injection
 app.use(mongoSanitize());
 
-// Logger middleware
-app.use(morgan(ENVIRONMENT.APP.ENV !== "development" ? "combined" : "dev"));
-
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, world!");
 });
@@ -94,6 +110,9 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/books", booksRoute);
 app.use("/api/v1/courses", coursesRoute);
 app.use("/api/v1/departments", departmentsRoute);
+app.use("/api/v1/requests", requestsRoute);
+app.use("/api/v1/upload", uploadRoute);
+app.use("/api/v1/sync", syncRoute);
 
 app.all("*", (req: Request, res: Response, next: NextFunction) => {
   return next(
@@ -103,9 +122,4 @@ app.all("*", (req: Request, res: Response, next: NextFunction) => {
 
 app.use(globalErrorHandler);
 
-if (ENVIRONMENT.APP.ENV !== "production") {
-  app.listen(ENVIRONMENT.APP.PORT, () => {
-    console.log(`Server is running on port ${ENVIRONMENT.APP.PORT}`);
-  });
-}
 export default app;
