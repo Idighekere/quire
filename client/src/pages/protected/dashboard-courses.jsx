@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { CoursesTable, AddCourseDialog } from "@/components"
 import Pagination from "@/components/pagination"
-import { getCoursesByUserQueryOptions, getDepartmentsQueryOptions } from "@/services"
+import { getCoursesByUserQueryOptions, getDepartmentsQueryOptions, COURSE_SORT_OPTIONS } from "@/services"
 import { useAuth } from "@/contexts"
 import { levels, semesters } from "@/constants"
 
@@ -23,6 +23,7 @@ function DashboardCoursesPage() {
   const [department, setDepartment] = useState("")
   const [level, setLevel] = useState("")
   const [semester, setSemester] = useState("")
+  const [sort, setSort] = useState("newest")
   const [page, setPage] = useState(1)
 
   // Debounce the search input so we don't query on every keystroke
@@ -39,6 +40,7 @@ function DashboardCoursesPage() {
     department,
     level,
     semester,
+    sort,
     page,
     limit: PAGE_SIZE,
   }
@@ -96,12 +98,32 @@ function DashboardCoursesPage() {
       </div>
 
       <div className="space-y-2">
-        <Input
-          placeholder="Search by course code or title..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="w-full sm:max-w-sm"
-        />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            placeholder="Search by course code or title..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-full sm:max-w-sm"
+          />
+          <Select
+            value={sort}
+            onValueChange={(value) => {
+              setSort(value)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              {COURSE_SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Select value={department || "all"} onValueChange={handleSelectChange(setDepartment)}>
             <SelectTrigger className="w-full">

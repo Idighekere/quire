@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Google Picker renders outside Radix modals in document.body, where an
+   open modal forces `pointer-events: none` on the body. Re-enable events on
+   the picker's own containers so it stays clickable and scrollable while
+   the Add Material dialog is open underneath. */
+.picker-dialog,
+.picker-dialog-bg {
+  pointer-events: auto !important;
+}
+
 /* ---------- Self-hosted fonts (DM Sans Variable + DM Mono) ---------- */
 
 /* DM Sans Variable — latin-ext */

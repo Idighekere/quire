@@ -63,10 +63,10 @@ export const getAllBooksQueryOptions = (params = {}) => {
 
 export const getBooksByUserQueryOptions=(user, params = {})=>{
     const {_id}=user || {}
-    const { search = "", courseCode = "", department = "", level = "", semester = "", category = "", page = 1, limit = 20 } = params
+    const { search = "", courseCode = "", department = "", level = "", semester = "", category = "", sort = "newest", page = 1, limit = 20 } = params
 
     return queryOptions({
-        queryKey: ['books',_id, search, courseCode, department, level, semester, category, page, limit],
+        queryKey: ['books',_id, search, courseCode, department, level, semester, category, sort, page, limit],
         queryFn: ()=>api.getBooksByUser(params),
     })
 }
@@ -74,20 +74,36 @@ export const getBooksByUserQueryOptions=(user, params = {})=>{
 
 export const getCoursesByUserQueryOptions=(user, params = {})=>{
     const {_id}=user || {}
-    const { search = "", department = "", level = "", semester = "", page = 1, limit = 20 } = params
+    const { search = "", department = "", level = "", semester = "", sort = "newest", page = 1, limit = 20 } = params
 
     return queryOptions({
-        queryKey: ['courses',_id, search, department, level, semester, page, limit],
+        queryKey: ['courses',_id, search, department, level, semester, sort, page, limit],
         queryFn: ()=>api.getCoursesByUser(params),
     })
 }
 
 export const getDepartmentsQueryOptions = () => {
-    return queryOptions({
-        queryKey: ['departments'],
-        queryFn: () => api.getDepartments(),
-    })
+  return queryOptions({
+    queryKey: ['departments'],
+    queryFn: () => api.getDepartments(),
+  })
 }
+
+export const BOOK_SORT_OPTIONS = [
+  { value: "newest", label: "Recently added" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "title-az", label: "Title A–Z" },
+  { value: "title-za", label: "Title Z–A" },
+]
+
+export const COURSE_SORT_OPTIONS = [
+  { value: "newest", label: "Recently added" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "title-az", label: "Title A–Z" },
+  { value: "title-za", label: "Title Z–A" },
+  { value: "level", label: "Level order" },
+  { value: "most-books", label: "Most materials" },
+]
 
 export const lookupCourseQueryOptions = (courseCode, enabled = true) => {
     return queryOptions({

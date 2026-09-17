@@ -169,7 +169,11 @@ function PendingBooksQueue() {
 function DriveSyncPanel() {
   const [category, setCategory] = useState("textBook")
   const [result, setResult] = useState(null)
+  const [isPicking, setIsPicking] = useState(false)
+  const [sharePicked, setSharePicked] = useState(true)
   const queryClient = useQueryClient()
+  const pickerApiKey = import.meta.env.VITE_GOOGLE_PICKER_API_KEY
+  const pickerAppId = import.meta.env.VITE_GOOGLE_PROJECT_NUMBER
 
   const { data: driveStatus } = useQuery({
     queryKey: ["googleDriveStatus"],
@@ -223,6 +227,90 @@ function DriveSyncPanel() {
   const visited = (result && result.visited) ?? summary.visited ?? 0
   const folders = (result && result.folders) || summary.folders || []
 
+  const { mutate: runImport, isPending: isImporting } = useMutation({
+    mutationFn: ({ fileIds }) => api.importPickedFiles(fileIds, { category, makePublic: sharePicked }),
+    onSuccess: (data) => {
+      setResult(data && data.data)
+      const importSummary = data && data.data && data.data.summary
+      toast.success(
+        `Import complete: ${importSummary ? importSummary.added : 0} added, ${importSummary ? importSummary.skipped : 0} skipped${importSummary && importSummary.coursesCreated ? `, ${importSummary.coursesCreated} courses created` : ""}`
+      )
+    },
+    onError: (err) => {
+      setResult(null)
+      toast.error(
+        (err && err.response && err.response.data && err.response.data.message) ||
+          "Drive import failed"
+      )
+    },
+  })
+
+  const loadPickerApi = () =>
+    new Promise((resolve, reject) => {
+      const boot = () => {
+        try {
+          window.gapi.load("picker", resolve)
+        } catch (err) {
+          reject(err)
+        }
+      }
+      if (window.gapi) {
+        boot()
+        return
+      }
+      if (document.querySelector('script[data-google-picker]')) {
+        document.querySelector('script[data-google-picker]').addEventListener("load", boot)
+        return
+      }
+      const script = document.createElement("script")
+      script.src = "https://apis.google.com/js/api.js"
+      script.async = true
+      script.defer = true
+      script.setAttribute("data-google-picker", "true")
+      script.onload = boot
+      script.onerror = () => reject(new Error("Could not load the Google picker"))
+      document.head.appendChild(script)
+    })
+
+  const handleImportFromDrive = async () => {
+    if (!isDriveConnected) {
+      toast.error("Connect Google Drive first, then import.")
+      return
+    }
+    if (!pickerApiKey) {
+      toast.error("Drive picker is not configured (missing API key).")
+      return
+    }
+    setIsPicking(true)
+    try {
+      const tokenData = await api.getPickerToken()
+      const accessToken = tokenData && tokenData.data && tokenData.data.accessToken
+      if (!accessToken) throw new Error("No picker token")
+      await loadPickerApi()
+      const picker = window.google.picker
+      const view = new picker.DocsView(picker.ViewId.DOCS)
+        .setIncludeFolders(true)
+        .setSelectFolderEnabled(true)
+        .setMode(picker.DocsViewMode.LIST)
+      const builder = new picker.PickerBuilder()
+        .setOAuthToken(accessToken)
+        .setDeveloperKey(pickerApiKey)
+        .addView(view)
+        .enableFeature(picker.Feature.MULTISELECT_ENABLED)
+        .setCallback((data) => {
+          if (data && data.action === picker.Action.PICKED && Array.isArray(data.docs) && data.docs.length > 0) {
+            runImport({ fileIds: data.docs.map((doc) => doc.id).filter(Boolean) })
+          }
+        })
+      if (pickerAppId) builder.setAppId(pickerAppId)
+      builder.build().setVisible(true)
+    } catch (err) {
+      toast.error("Could not open the Drive picker")
+    } finally {
+      setIsPicking(false)
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -234,6 +322,11 @@ function DriveSyncPanel() {
           <span className="font-mono">GET211 - Strength of Materials</span>{" "}
           (a <span className="font-mono">UUY-</span> prefix is also accepted) —
           the course is created automatically if it doesn't exist yet.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Files you added by hand in Drive are invisible to Run Sync — pick
+          them with Import from Drive instead. Picking grants access file by
+          file; nothing else in the Drive is read.
         </p>
 
         <div className="flex flex-col gap-2 rounded-lg border border-border p-4">
@@ -288,6 +381,29 @@ function DriveSyncPanel() {
           <Button onClick={() => runSync()} disabled={isPending}>
             {isPending ? "Syncing…" : "Run Sync"}
           </Button>
+          <Button variant="outline" onClick={handleImportFromDrive} disabled={isPicking || isImporting}>
+            {isPicking ? "Opening picker…" : isImporting ? "Importing…" : "Import from Drive"}
+          </Button>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={sharePicked}
+              onChange={(e) => setSharePicked(e.target.checked)}
+            />
+            <span>
+              Share picked files as Anyone with the link when I own them.
+              Readers open books with no sign-in, so private picks are skipped otherwise.
+            </span>
+          </label>
+          {!pickerApiKey && (
+            <p className="text-xs text-muted-foreground">
+              Import from Drive needs a Google API key (VITE_GOOGLE_PICKER_API_KEY) — picking stays disabled until it is set.
+            </p>
+          )}
         </div>
 
         {result && (

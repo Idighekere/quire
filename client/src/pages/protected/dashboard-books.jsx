@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { BooksTable, AddBookDialog } from "@/components/"
 import Pagination from "@/components/pagination"
-import { getBooksByUserQueryOptions, getCoursesByUserQueryOptions, getDepartmentsQueryOptions } from "@/services"
+import { getBooksByUserQueryOptions, getCoursesByUserQueryOptions, getDepartmentsQueryOptions, BOOK_SORT_OPTIONS } from "@/services"
 import { useAuth } from "@/contexts"
 import { bookCategories, levels, semesters } from "@/constants"
 
@@ -24,6 +24,7 @@ function DashboardBooksPage() {
   const [level, setLevel] = useState("")
   const [semester, setSemester] = useState("")
   const [category, setCategory] = useState("")
+  const [sort, setSort] = useState("newest")
   const [page, setPage] = useState(1)
 
   // Debounce the search input so we don't query on every keystroke
@@ -44,6 +45,7 @@ function DashboardBooksPage() {
     level,
     semester,
     category,
+    sort,
     page,
     limit: PAGE_SIZE,
   }
@@ -107,12 +109,32 @@ function DashboardBooksPage() {
       </div>
 
       <div className="space-y-2">
-        <Input
-          placeholder="Search by title, course title or code..."
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="w-full sm:max-w-sm"
-        />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            placeholder="Search by title, course title or code..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-full sm:max-w-sm"
+          />
+          <Select
+            value={sort}
+            onValueChange={(value) => {
+              setSort(value)
+              setPage(1)
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              {BOOK_SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           <Select value={courseCode || "all"} onValueChange={handleSelectChange(setCourseCode)}>
             <SelectTrigger className="w-full">

@@ -139,6 +139,24 @@ export const api = {
     });
     return response.data;
   },
+  getPickerToken: async () => {
+    const response = await apiClient.get("/sync/picker-token");
+    return response.data;
+  },
+  getMyPickerToken: async () => {
+    const response = await apiClient.get("/sync/my-picker-token");
+    return response.data;
+  },
+  importFromMyDrive: async (payload) => {
+    const response = await apiClient.post("/sync/my-import", payload);
+    return response.data;
+  },
+  importPickedFiles: async (fileIds, { category = "", makePublic = false } = {}) => {
+    const response = await apiClient.post("/sync/import", { fileIds, makePublic }, {
+      params: category ? { category } : {},
+    });
+    return response.data;
+  },
   getGoogleDriveStatus: async () => {
     const response = await apiClient.get("/auth/google/status");
     return response.data;

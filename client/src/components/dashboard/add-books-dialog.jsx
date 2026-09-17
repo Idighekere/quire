@@ -17,6 +17,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/services"
 import { bookCategories } from "@/constants"
+import { ENVIRONMENT } from "@/config"
+import { loadGooglePickerApi } from "@/helpers/google-picker"
 import { getDepartmentsQueryOptions, lookupCourseQueryOptions } from "@/services/queries"
 import toast from "react-hot-toast"
 
@@ -29,7 +31,7 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
     setValue,
     watch,
     control,
-    formState: { errors, isValid },
+    formState: { errors },
   } = useForm({
     mode: "onChange",
     defaultValues: {
@@ -52,6 +54,12 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
       setValue("academicSession", editingBook.academicSession || "")
     } else if (!editingBook && open) {
       reset()
+      setSelectedFile(null)
+      setUploadPercent(0)
+      setPickedFiles([])
+      setUploadSource("device")
+      setActiveTab("link")
+      setDriveConnected(null)
     }
   }, [editingBook, open, setValue, reset])
 
@@ -64,6 +72,14 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
   const [activeTab, setActiveTab] = useState("link")
   const [selectedFile, setSelectedFile] = useState(null)
   const [uploadPercent, setUploadPercent] = useState(0)
+  // Upload tab has two sources: a file from this device, or files picked
+  // from the contributor's own Google Drive (per-file picker grants).
+  const [uploadSource, setUploadSource] = useState("device")
+  const [pickedFiles, setPickedFiles] = useState([])
+  const [isPicking, setIsPicking] = useState(false)
+  const [driveConnected, setDriveConnected] = useState(null)
+  const [sharePicked, setSharePicked] = useState(true)
+  const pickerApiKey = import.meta.env.VITE_GOOGLE_PICKER_API_KEY
 
   // Lookup course when code changes (debounced via React Query)
   const { data: courseLookup, isLoading: courseLookupLoading, error: courseLookupError } = useQuery(
@@ -139,6 +155,83 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
     },
   })
 
+  // Import files picked from the contributor's own Drive. Course details
+  // come from this same form; each file's title is derived from its name.
+  const { mutate: importDriveMutation, isPending: isImporting } = useMutation({
+    mutationFn: (payload) => api.importFromMyDrive(payload),
+    onSuccess: (data) => {
+      const summary = data?.data?.summary
+      reset()
+      setSelectedFile(null)
+      setUploadPercent(0)
+      setPickedFiles([])
+      setUploadSource("device")
+      setActiveTab("link")
+      onOpenChange(false)
+      onSuccess()
+      toast.success(
+        `Drive import complete: ${summary?.added ?? 0} added${summary?.skipped ? `, ${summary.skipped} skipped` : ""}. Pending review.`
+      )
+    },
+    onError: (error) => {
+      console.error("Error importing from Drive:", error)
+      const message = error?.response?.data?.message || "Failed to import from Drive"
+      toast.error(message)
+    },
+  })
+
+  // Probe whether this user has connected their own Google Drive, so the
+  // drive source can show "Connect" vs "Choose files" up front.
+  useEffect(() => {
+    if (!open || activeTab !== "upload" || uploadSource !== "drive" || driveConnected !== null) return
+    api.getMyPickerToken().then(() => setDriveConnected(true)).catch(() => setDriveConnected(false))
+  }, [open, activeTab, uploadSource, driveConnected])
+
+  const handlePickFromDrive = async () => {
+    if (!pickerApiKey) {
+      toast.error("Drive picker is not configured yet. Please use another option.")
+      return
+    }
+    setIsPicking(true)
+    try {
+      const tokenData = await api.getMyPickerToken()
+      const accessToken = tokenData && tokenData.data && tokenData.data.accessToken
+      if (!accessToken) throw new Error("No picker token")
+      setDriveConnected(true)
+      await loadGooglePickerApi()
+      const picker = window.google.picker
+      const view = new picker.DocsView(picker.ViewId.DOCS)
+        .setIncludeFolders(false)
+        .setMode(picker.DocsViewMode.LIST)
+      new picker.PickerBuilder()
+        .setOAuthToken(accessToken)
+        .setDeveloperKey(pickerApiKey)
+        .addView(view)
+        .enableFeature(picker.Feature.MULTISELECT_ENABLED)
+        .setCallback((data) => {
+          if (data && data.action === picker.Action.PICKED && Array.isArray(data.docs) && data.docs.length > 0) {
+            setPickedFiles((prev) => {
+              const seen = new Set(prev.map((f) => f.id))
+              const fresh = data.docs
+                .filter((doc) => doc && doc.id && !seen.has(doc.id))
+                .map((doc) => ({ id: doc.id, name: doc.name || doc.id }))
+              return [...prev, ...fresh]
+            })
+          }
+        })
+        .build()
+        .setVisible(true)
+    } catch (err) {
+      if (err && err.response && err.response.status === 409) {
+        setDriveConnected(false)
+      } else {
+        toast.error("Could not open the Drive picker")
+      }
+    } finally {
+      setIsPicking(false)
+    }
+  }
+
   const submitForm = (data) => {
     if (isEditMode) {
       updateBookMutation({
@@ -150,6 +243,22 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
       return
     }
     if (activeTab === "upload") {
+      if (uploadSource === "drive") {
+        if (pickedFiles.length === 0) {
+          toast.error("Please choose at least one file from your Google Drive")
+          return
+        }
+        importDriveMutation({
+          fileIds: pickedFiles.map((f) => f.id),
+          courseCode: data.courseCode,
+          category: data.category,
+          academicSession: data.academicSession || undefined,
+          newCourseTitle: data.newCourseTitle || undefined,
+          departmentShortNames: data.departmentShortNames?.length ? data.departmentShortNames : undefined,
+          makePublic: sharePicked,
+        })
+        return
+      }
       if (!selectedFile) {
         toast.error("Please choose a file to upload")
         return
@@ -182,11 +291,30 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
   const newCourseTitleValue = watch("newCourseTitle")
   const deptShortNamesValue = watch("departmentShortNames")
 
-  const isLinkRequiredMissing = !isEditMode && activeTab === "link" && !driveUrlValue
-  const isUploadRequiredMissing = !isEditMode && activeTab === "upload" && !selectedFile
+  // Deterministic submit gate: every requirement derives from watched form
+  // state (plus upload/picker state), so the button enables exactly when the
+  // form is complete — no dependence on react-hook-form's isValid timing.
+  const isDriveSource = !isEditMode && activeTab === "upload" && uploadSource === "drive"
+  const isTitleMissing = !isDriveSource && !(titleValue || "").trim()
+  const isCourseCodeMissing = normalizedCourseCode.length !== 6
+  const isCategoryMissing = !categoryValue
+  const isSessionInvalid = isPastQuestion && !/^\d{4}\/\d{4}$/.test(academicSessionValue || "")
+  const isLinkInvalid =
+    !isEditMode &&
+    activeTab === "link" &&
+    !/^https:\/\/drive\.google\.com\/.*/i.test(driveUrlValue || "")
+  const isUploadRequiredMissing = !isEditMode && activeTab === "upload" && uploadSource === "device" && !selectedFile
+  const isDriveFilesMissing = isDriveSource && pickedFiles.length === 0
   const isNewCourseMissing = !isEditMode && !courseExists && normalizedCourseCode.length === 6 && (!newCourseTitleValue || !deptShortNamesValue?.length)
-  const isPastQuestionMissing = isPastQuestion && !academicSessionValue
-  const isSubmitDisabled = !isValid || isLinkRequiredMissing || isUploadRequiredMissing || isNewCourseMissing || isPastQuestionMissing
+  const isSubmitDisabled =
+    isTitleMissing ||
+    isCourseCodeMissing ||
+    isCategoryMissing ||
+    isSessionInvalid ||
+    isLinkInvalid ||
+    isUploadRequiredMissing ||
+    isDriveFilesMissing ||
+    isNewCourseMissing
 
   return (
     <Dialog
@@ -196,11 +324,23 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
           reset()
           setSelectedFile(null)
           setUploadPercent(0)
+          setPickedFiles([])
+          setUploadSource("device")
+          setDriveConnected(null)
         }
         onOpenChange(newOpen)
       }}
     >
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto"
+        // The Google picker renders outside this modal in document.body, so
+        // clicks/focus landing on its backdrop look like "outside"
+        // interaction to Radix and would dismiss this dialog mid-pick.
+        // Block those paths; Escape and the buttons still close normally.
+        onInteractOutside={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Edit Material" : "Add New Material"}</DialogTitle>
           <DialogDescription>
@@ -316,13 +456,21 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
             </div>
           )}
 
-          {/* Book Title */}
+          {/* Book Title (one title per file is derived from the file name for Drive picks) */}
           <div className="space-y-2">
-            <Label htmlFor="title">Material Title <span className="text-destructive">*</span></Label>
+            <Label htmlFor="title">
+              Material Title {!isDriveSource && <span className="text-destructive">*</span>}
+            </Label>
             <Input
               id="title"
-              {...register("title", { required: "Material title is required" })}
-              placeholder="e.g. Principles of Electrical & Electronics by Mheta"
+              {...register("title", {
+                validate: (value) => isDriveSource || ((value || "").trim() ? true : "Material title is required"),
+              })}
+              placeholder={
+                isDriveSource
+                  ? "Optional — each file keeps its own name"
+                  : "e.g. Principles of Electrical & Electronics by Mheta"
+              }
             />
             {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
@@ -381,6 +529,7 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
                 })}
               />
               {errors.driveUrl && <p className="text-sm text-destructive">{errors.driveUrl.message}</p>}
+              <p className="text-xs text-muted-foreground">The file must be shared as Anyone with the link — private files are rejected.</p>
             </div>
           ) : (
           <Tabs value={activeTab} onValueChange={(value) => { setActiveTab(value); setUploadPercent(0) }} className="space-y-4">
@@ -406,11 +555,31 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
                   })}
                 />
                 {errors.driveUrl && <p className="text-sm text-destructive">{errors.driveUrl.message}</p>}
+                <p className="text-xs text-muted-foreground">The file must be shared as Anyone with the link — private files are rejected.</p>
               </div>
             </TabsContent>
 
             <TabsContent value="upload">
-              <div className="space-y-2">
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={uploadSource === "device" ? "default" : "outline"}
+                    onClick={() => setUploadSource("device")}
+                  >
+                    From this device
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={uploadSource === "drive" ? "default" : "outline"}
+                    onClick={() => setUploadSource("drive")}
+                  >
+                    From my Google Drive
+                  </Button>
+                </div>
+
+                {uploadSource === "device" ? (
+                <div className="space-y-2">
                 <Label>File Upload <span className="text-destructive">*</span></Label>
                 <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
                   <input
@@ -439,6 +608,66 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
                 <p className="text-xs text-muted-foreground">
                   The file is stored in the library's Google Drive and becomes visible once approved.
                 </p>
+                </div>
+                ) : (
+                <div className="space-y-3">
+                  {driveConnected === false ? (
+                    <div className="space-y-2 rounded-lg border p-4">
+                      <p className="text-sm">
+                        Connect your Google Drive to pick files from it. Only the files you pick are shared with the library — nothing else is read.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          window.location.href = `${ENVIRONMENT.APP.BASE_URL}/auth/google?drive=1&redirect=${encodeURIComponent(window.location.origin)}`
+                        }}
+                      >
+                        Connect Google Drive
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Button type="button" variant="outline" onClick={handlePickFromDrive} disabled={isPicking}>
+                        {isPicking ? "Opening picker…" : pickedFiles.length > 0 ? "Choose more files" : "Choose files from my Drive"}
+                      </Button>
+                      {pickedFiles.length > 0 && (
+                        <ul className="space-y-1.5">
+                          {pickedFiles.map((file) => (
+                            <li key={file.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+                              <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setPickedFiles((prev) => prev.filter((f) => f.id !== file.id))}
+                              >
+                                Remove
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <label className="flex cursor-pointer items-start gap-2 text-sm text-muted-foreground">
+                        <input
+                          type="checkbox"
+                          className="mt-1"
+                          checked={sharePicked}
+                          onChange={(e) => setSharePicked(e.target.checked)}
+                        />
+                        <span>
+                          Share my picked files as Anyone with the link. Readers open books with no sign-in, so private picks are skipped otherwise.
+                        </span>
+                      </label>
+                      {!pickerApiKey && (
+                        <p className="text-xs text-muted-foreground">
+                          Drive picking needs an API key configured — please use another option for now.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+                )}
                 {(isUploading || uploadPercent > 0) && (
                   <div className="space-y-1">
                     {isUploading && uploadPercent >= 100 ? (
@@ -470,18 +699,22 @@ function AddBookDialog({ open, onOpenChange, onSuccess, editingBook }) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || isUploading || isUpdating || isSubmitDisabled}>
+            <Button type="submit" disabled={isSubmitting || isUploading || isUpdating || isImporting || isSubmitDisabled}>
               {isEditMode
                 ? isUpdating
                   ? "Saving..."
                   : "Save Changes"
                 : isUploading
                   ? "Uploading..."
-                  : activeTab === "upload"
-                    ? "Upload Material"
-                    : isSubmitting
-                      ? "Adding..."
-                      : "Add Material"}
+                  : isDriveSource && isImporting
+                    ? "Importing…"
+                    : activeTab === "upload"
+                      ? uploadSource === "drive"
+                        ? "Add from my Drive"
+                        : "Upload Material"
+                      : isSubmitting
+                        ? "Adding..."
+                        : "Add Material"}
             </Button>
           </DialogFooter>
         </form>
