@@ -2,6 +2,7 @@ import { TokenPayload } from './../types/auth.types';
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken"
 import { ENVIRONMENT } from "../configs";
+import { SCHOOL_CODE_PREFIX } from "../constants";
 import { CookieOptions, Response } from "express";
 
 
@@ -80,6 +81,65 @@ const extractDriveFileId = (url: string) => {
     return match ? match[1] : null;
 };
 
+/**
+ * Normalize a course code: strip ALL whitespace, uppercase.
+ * "get 211" → "GET211", "Get211" → "GET211"
+ */
+const normalizeCourseCode = (code: string): string => {
+    if (!code) return code;
+    // Strip whitespace, uppercase, and drop an optional "UUY-" school prefix
+    // ("UUY-CPE313" and "UUY - CPE313" both normalize to "CPE313").
+    return code.replace(/\s+/g, '').toUpperCase().replace(/^UUY-/, '');
+};
+
+/**
+ * Split an optional school prefix (e.g. "UUY-") off a raw course code.
+ * Strips whitespace, uppercases, then splits a leading `<SCHOOL_CODE_PREFIX>-`.
+ * Returns the prefix (or null) plus the canonical `rest` code.
+ * "UUY-CPE313" → { prefix: "UUY", rest: "CPE313" }
+ */
+const splitCourseCodePrefix = (raw: string): { prefix: string | null; rest: string } => {
+    const cleaned = (raw || '').replace(/\s+/g, '').toUpperCase();
+    const tag = `${SCHOOL_CODE_PREFIX}-`;
+    if (cleaned.startsWith(tag)) {
+        return { prefix: SCHOOL_CODE_PREFIX, rest: cleaned.slice(tag.length) };
+    }
+    return { prefix: null, rest: cleaned };
+};
+
+/**
+ * Derive level + semester from a normalized course code.
+ * Digit[0] (after 3 letters) = level: 1→100 ... 5→500
+ * Digit[1] = semester: 1→'1st', 2→'2nd'
+ * Returns null when the code doesn't match the pattern.
+ */
+const deriveLevelSemesterFromCourseCode = (
+    code: string,
+): { level: number; semester: '1st' | '2nd' } | null => {
+    const normalized = normalizeCourseCode(code);
+    const match = normalized.match(/^[A-Z]{3}([1-5])([12])[0-9]$/);
+    if (!match) return null;
+    return {
+        level: parseInt(match[1], 10) * 100,
+        semester: match[2] === '1' ? '1st' : '2nd',
+    };
+};
+
+const buildDrivePreviewUrl = (fileId: string) =>
+    `https://drive.google.com/file/d/${fileId}/preview`;
+
+const buildDriveDownloadUrl = (fileId: string) =>
+    `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+const slugify = (text: string): string => {
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+};
+
 
 const getDepartmentShortName = (name: string) => {
 
@@ -109,4 +169,4 @@ const getDepartmentShortName = (name: string) => {
 }
 
 
-export { hashPassword, comparePassword, verifyToken, hashData, setCookie, extractDriveFileId, getDepartmentShortName, generateTokens, clearCookie }
+export { hashPassword, comparePassword, verifyToken, hashData, setCookie, extractDriveFileId, getDepartmentShortName, generateTokens, clearCookie, normalizeCourseCode, deriveLevelSemesterFromCourseCode, splitCourseCodePrefix, buildDrivePreviewUrl, buildDriveDownloadUrl, slugify }

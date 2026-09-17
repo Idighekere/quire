@@ -30,6 +30,10 @@ const UserSchema = new Schema({
     refreshToken: {
         type: String,
         select: false
+    },
+    googleRefreshToken: {
+        type: String,
+        select: false
     }
 })
 

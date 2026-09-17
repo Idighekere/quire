@@ -5,6 +5,7 @@ export interface IUser extends Document {
     name: string;
     email: string;
     refreshToken:string|undefined;
+    googleRefreshToken: string|undefined;
     role: Role;
     password: string|undefined;
     createdAt: Date;

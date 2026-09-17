@@ -6,8 +6,12 @@ import { IUser } from "./user.types";
 export interface ICourse extends Document {
     title: string;
     courseCode: string;
-    departments: [mongoose.Types.ObjectId];
+    /** Optional school prefix for display (e.g. "UUY" renders as "UUY-CPE313"). */
+    codePrefix?: string;
+    departments: mongoose.Types.ObjectId[];
+    /** Derived from courseCode digit[0]: 1→100 ... 5→500. Set automatically, not user-entered. */
     level: number;
+    /** Derived from courseCode digit[1]: 1→'1st', 2→'2nd'. Set automatically. */
     semester: Semester;
     addedBy: Require_id<IUser>
 }
