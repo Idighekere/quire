@@ -1,7 +1,7 @@
 import { google, drive_v3 } from "googleapis";
 import { ENVIRONMENT } from "@/common/configs";
 import { Role } from "@/common/constants";
-import { ErrorResponse } from "@/common/utils";
+import { ErrorResponse, normalizeCourseCode } from "@/common/utils";
 import { User } from "@/models";
 import { Readable } from "stream";
 
@@ -13,6 +13,45 @@ export interface DriveFileResult {
 
 export interface DriveFolderResult {
   folderId: string;
+}
+
+/**
+ * Match a level folder tolerantly: accept "300 Level", "300", "300L".
+ * Leading three digits (/^(\d{3})\b/) cover the first two; a trailing
+ * L form (/(\d)\s*L\b/i, extended to multi-digit so "300L" resolves)
+ * covers hand-made short names. A lone digit ("3L") maps to 300.
+ */
+function matchesLevelFolder(name: string, level: number): boolean {
+  const leading = name.match(/^(\d{3})\b/);
+  if (leading && parseInt(leading[1], 10) === level) return true;
+  const lAbbr = name.match(/(\d+)\s*L\b/i);
+  if (lAbbr) {
+    const digits = lAbbr[1];
+    if (digits.length === 1 && parseInt(digits, 10) * 100 === level) return true;
+    if (parseInt(digits, 10) === level) return true;
+  }
+  return false;
+}
+
+/**
+ * Match a semester folder tolerantly: names starting with 1st/2nd
+ * (case-insensitive), containing first/second, or exactly 1/2.
+ */
+function matchesSemesterFolder(name: string, semester: string): boolean {
+  const lower = name.toLowerCase();
+  if (semester === "1st") {
+    return lower.startsWith("1st") || lower.includes("first") || lower.trim() === "1";
+  }
+  return lower.startsWith("2nd") || lower.includes("second") || lower.trim() === "2";
+}
+
+export interface DriveAboutResult {
+  email: string;
+  displayName: string;
+  rootFolderId: string;
+  childFolderCount: number;
+  childFileCount: number;
+  childNames: string[];
 }
 
 /**
@@ -44,6 +83,57 @@ export class DriveService {
     }
 
     return currentParentId;
+  }
+
+  /**
+   * Resolve/create the Level/Semester/Course folder path tolerantly so
+   * hand-made Drive folders (e.g. "300L", "GET 311 - Eng. Maths III")
+   * are reused instead of creating duplicate canonical folders.
+   * Lists child folders of each parent via listChildren, matches in
+   * memory (first match wins), and falls back to findOrCreateFolder
+   * with the canonical name when nothing matches.
+   */
+  async ensureCoursePath(
+    level: number,
+    semester: string,
+    courseCode: string,
+    courseTitle: string,
+  ): Promise<string> {
+    // Level: accept "300 Level", "300L", "300".
+    const { folders: levelFolders } = await this.listChildren(this.rootFolderId);
+    const levelMatch = levelFolders.find((folder) =>
+      matchesLevelFolder(folder.name ?? "", level),
+    );
+    const levelId =
+      levelMatch?.id ??
+      (await this.findOrCreateFolder(`${level} Level`, this.rootFolderId));
+
+    // Semester: names starting with 1st/2nd (case-insensitive),
+    // containing first/second, or exactly 1/2.
+    const canonicalSemester = semester === "1st" ? "1st Semester" : "2nd Semester";
+    const { folders: semesterFolders } = await this.listChildren(levelId);
+    const semesterMatch = semesterFolders.find((folder) =>
+      matchesSemesterFolder(folder.name ?? "", semester),
+    );
+    const semesterId =
+      semesterMatch?.id ??
+      (await this.findOrCreateFolder(canonicalSemester, levelId));
+
+    // Course: compare the part before the first -/–/— normalized
+    // with normalizeCourseCode against the normalized target code.
+    const normalizedTarget = normalizeCourseCode(courseCode);
+    const { folders: courseFolders } = await this.listChildren(semesterId);
+    const courseMatch = courseFolders.find((folder) => {
+      const name = folder.name ?? "";
+      const separatorIndex = name.search(/[-–—]/);
+      const codePart = separatorIndex === -1 ? name : name.slice(0, separatorIndex);
+      return normalizeCourseCode(codePart) === normalizedTarget;
+    });
+    const courseId =
+      courseMatch?.id ??
+      (await this.findOrCreateFolder(`${courseCode} - ${courseTitle}`, semesterId));
+
+    return courseId;
   }
 
   /**
@@ -200,6 +290,30 @@ export class DriveService {
     }
 
     return path;
+  }
+
+  /**
+   * Identify which Google account and root folder the server actually uses.
+   * Returns the connected account plus a summary of the root's direct children.
+   */
+  async about(): Promise<DriveAboutResult> {
+    const aboutRes = await this.drive.about.get({
+      fields: "user(emailAddress,displayName)",
+    });
+    const { files, folders } = await this.listChildren(this.rootFolderId);
+    const childNames = [...folders, ...files]
+      .map((item) => item.name ?? "")
+      .filter((name) => name.length > 0)
+      .slice(0, 20);
+
+    return {
+      email: aboutRes.data.user?.emailAddress ?? "",
+      displayName: aboutRes.data.user?.displayName ?? "",
+      rootFolderId: this.rootFolderId,
+      childFolderCount: folders.length,
+      childFileCount: files.length,
+      childNames,
+    };
   }
 
   /**

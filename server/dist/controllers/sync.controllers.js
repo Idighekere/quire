@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.syncDrive = void 0;
+exports.getSyncDebug = exports.syncDrive = void 0;
 const configs_1 = require("../common/configs");
 const constants_1 = require("../common/constants");
 const utils_1 = require("../common/utils");
@@ -51,14 +51,19 @@ const syncDrive = (0, middlewares_1.catchAsync)(async (req, res, next) => {
     const added = [];
     const skipped = [];
     const coursesCreated = [];
+    const folders = [];
     let visited = 0;
     const walk = async (parentId, segments) => {
+        const displayPath = segments.join(" / ") || "(root)";
+        if (folders.length < 200) {
+            folders.push(displayPath);
+        }
         if (visited >= MAX_VISITED_ITEMS) {
             throw new utils_1.ErrorResponse(`Sync aborted after visiting ${MAX_VISITED_ITEMS} Drive items. Run it again to continue.`, 400);
         }
-        const { files, folders } = await adminDriveService.listChildren(parentId);
-        visited += files.length + folders.length;
-        for (const folder of folders) {
+        const { files, folders: childFolders } = await adminDriveService.listChildren(parentId);
+        visited += files.length + childFolders.length;
+        for (const folder of childFolders) {
             if (!folder.id)
                 continue;
             await walk(folder.id, [...segments, folder.name || ""]);
@@ -162,11 +167,28 @@ const syncDrive = (0, middlewares_1.catchAsync)(async (req, res, next) => {
         added,
         skipped,
         coursesCreated,
+        visited,
+        folders,
         summary: {
             added: added.length,
             skipped: skipped.length,
             coursesCreated: coursesCreated.length,
+            visited,
+            folders,
         },
     }, `Drive sync complete: ${added.length} added, ${skipped.length} skipped, ${coursesCreated.length} courses created`);
 });
 exports.syncDrive = syncDrive;
+/**
+ * GET /api/v1/sync/debug (admin)
+ * Exposes which Google account and root folder the server syncs from,
+ * plus a summary of the root's direct children. Useful when uploads land
+ * in a folder the user sees but sync lists a different (empty) folder.
+ */
+const getSyncDebug = (0, middlewares_1.catchAsync)(async (_req, res) => {
+    // Throws 503 when no admin has connected Google yet.
+    const adminDriveService = await (0, drive_service_1.driveServiceForAdmin)();
+    const debug = await adminDriveService.about();
+    (0, utils_1.SuccessResponse)(res, 200, debug, "Sync debug: connected Google account and root folder");
+});
+exports.getSyncDebug = getSyncDebug;

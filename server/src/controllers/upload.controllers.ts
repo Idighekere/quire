@@ -92,11 +92,6 @@ const uploadBookFile = catchAsync(async (req: Request, res: Response, next: Next
     addedBy: req.user._id,
   });
 
-  // Build folder path: {Level} Level/{Semester} Semester/{CODE - Title}
-  const levelLabel = `${course.level} Level`;
-  const semesterLabel = course.semester === "1st" ? "1st Semester" : "2nd Semester";
-  const courseFolderName = `${course.courseCode} - ${course.title}`;
-
   // Uploads run as the library admin's Google account (single
   // ownership/quota): reuse the connected admin's stored Drive token.
   // Any logged-in uploader may upload; only an admin needs to have
@@ -105,7 +100,12 @@ const uploadBookFile = catchAsync(async (req: Request, res: Response, next: Next
 
   let folderId: string;
   try {
-    folderId = await adminDriveService.ensureFolderPath([levelLabel, semesterLabel, courseFolderName]);
+    folderId = await adminDriveService.ensureCoursePath(
+      course.level,
+      course.semester,
+      course.courseCode,
+      course.title,
+    );
   } catch (driveErr) {
     console.error("Drive folder creation failed:", driveErr);
     return next(new ErrorResponse("Failed to create Drive folder structure. Check that an admin has connected Google.", 500));

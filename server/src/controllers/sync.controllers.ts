@@ -86,9 +86,15 @@ const syncDrive = catchAsync(
     const added: AddedEntry[] = [];
     const skipped: SkippedEntry[] = [];
     const coursesCreated: CreatedCourseEntry[] = [];
+    const folders: string[] = [];
     let visited = 0;
 
     const walk = async (parentId: string, segments: string[]) => {
+      const displayPath = segments.join(" / ") || "(root)";
+      if (folders.length < 200) {
+        folders.push(displayPath);
+      }
+
       if (visited >= MAX_VISITED_ITEMS) {
         throw new ErrorResponse(
           `Sync aborted after visiting ${MAX_VISITED_ITEMS} Drive items. Run it again to continue.`,
@@ -96,10 +102,10 @@ const syncDrive = catchAsync(
         );
       }
 
-      const { files, folders } = await adminDriveService.listChildren(parentId);
-      visited += files.length + folders.length;
+      const { files, folders: childFolders } = await adminDriveService.listChildren(parentId);
+      visited += files.length + childFolders.length;
 
-      for (const folder of folders) {
+      for (const folder of childFolders) {
         if (!folder.id) continue;
         await walk(folder.id, [...segments, folder.name || ""]);
       }
@@ -217,10 +223,14 @@ const syncDrive = catchAsync(
         added,
         skipped,
         coursesCreated,
+        visited,
+        folders,
         summary: {
           added: added.length,
           skipped: skipped.length,
           coursesCreated: coursesCreated.length,
+          visited,
+          folders,
         },
       },
       `Drive sync complete: ${added.length} added, ${skipped.length} skipped, ${coursesCreated.length} courses created`,
@@ -228,4 +238,25 @@ const syncDrive = catchAsync(
   },
 );
 
-export { syncDrive };
+/**
+ * GET /api/v1/sync/debug (admin)
+ * Exposes which Google account and root folder the server syncs from,
+ * plus a summary of the root's direct children. Useful when uploads land
+ * in a folder the user sees but sync lists a different (empty) folder.
+ */
+const getSyncDebug = catchAsync(
+  async (_req: Request, res: Response) => {
+    // Throws 503 when no admin has connected Google yet.
+    const adminDriveService = await driveServiceForAdmin();
+    const debug = await adminDriveService.about();
+
+    SuccessResponse(
+      res,
+      200,
+      debug,
+      "Sync debug: connected Google account and root folder",
+    );
+  },
+);
+
+export { syncDrive, getSyncDebug };
