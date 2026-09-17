@@ -1,12 +1,24 @@
 import React from 'react'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Funnel as Filter } from '@phosphor-icons/react'
 import { CourseFilters, SearchBar } from '@/components/'
+import ShareButton from '../share-button'
+import { departments } from '@/constants'
 import { getDepartmentsFullName } from '@/helpers'
 import { ScrollArea } from '../ui/scroll-area'
+
+/** Normalize a department URL value (slug or legacy shortName, any case) to the canonical slug. */
+const normalizeDepartmentParam = (value) => {
+  if (!value) return ''
+  const needle = String(value)
+  const dept = departments.find(
+    (d) => d.slug === needle.toLowerCase() || d.shortName === needle.toUpperCase()
+  )
+  return dept ? dept.slug : ''
+}
 
 export default function CoursesLayout ({
   children,
@@ -16,10 +28,19 @@ export default function CoursesLayout ({
   const [open, setOpen] = useState(false)
 
   const [filters, setFilters] = useState({
-    department: courseParams?.department || '',
-    level: courseParams?.level || '',
-    semester: courseParams?.semester || ''
+    department: '',
+    level: '',
+    semester: ''
   })
+
+  // Reflect the URL (shared links, back/forward) in the visible filter state.
+  useEffect(() => {
+    setFilters({
+      department: normalizeDepartmentParam(courseParams?.department),
+      level: courseParams?.level ? String(courseParams.level) : '',
+      semester: courseParams?.semester || ''
+    })
+  }, [courseParams?.department, courseParams?.level, courseParams?.semester])
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
@@ -90,13 +111,15 @@ export default function CoursesLayout ({
               </div>
 
               {/* Mobile Filter Button */}
-              <Sheet open={open} onOpenChange={setOpen}>
-                <SheetTrigger asChild>
-                  <Button variant='outline' className='md:hidden'>
-                    <Filter className='h-4 w-4' />
-                    Filters
-                  </Button>
-                </SheetTrigger>
+              <div className='flex items-center gap-2'>
+                <ShareButton title='Engineering courses on Quire' />
+                <Sheet open={open} onOpenChange={setOpen}>
+                  <SheetTrigger asChild>
+                    <Button variant='outline' className='md:hidden'>
+                      <Filter className='h-4 w-4' />
+                      Filters
+                    </Button>
+                  </SheetTrigger>
                 <SheetContent side='bottom' className='h-[72vh]'>
                   <div className='p-5'>
                     <h2 className='mb-4 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.09em] text-muted-foreground'>
@@ -114,6 +137,7 @@ export default function CoursesLayout ({
                   </div>
                 </SheetContent>
               </Sheet>
+              </div>
             </div>
 
             {/* Search Bar */}

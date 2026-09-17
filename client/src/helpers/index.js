@@ -1,24 +1,13 @@
-export const getDepartmentsFullName = (shortName) => {
-    switch (shortName) {
-        case 'CPE':
-            return 'Computer Engineering';
-        case 'AGE':
-            return 'Agricultural Engineering';
-        case 'EEE':
-            return 'Electrical and Electronics Engineering';
-        case 'MEE':
-            return 'Mechanical Engineering';
-        case 'PEE':
-            return 'Petroleum Engineering';
-        case 'FDE':
-            return 'Food Engineering';
-        case 'CVE':
-            return 'Civil Engineering';
-        case 'CHE':
-            return 'Chemical Engineering';
-        default:
-            return shortName;
-    }
+import { departments } from "@/constants";
+
+/** Resolve a department shortName ("CVE", any case) or URL slug ("civil-engineering") to its full name. */
+export const getDepartmentsFullName = (shortNameOrSlug) => {
+    if (!shortNameOrSlug) return shortNameOrSlug;
+    const needle = String(shortNameOrSlug);
+    const dept = departments.find(
+        (d) => d.shortName.toUpperCase() === needle.toUpperCase() || d.slug === needle.toLowerCase(),
+    );
+    return dept ? dept.name : shortNameOrSlug;
 }
 
 
@@ -50,6 +39,21 @@ const removeFromLocalStorage = (key) => {
     } catch (error) {
         console.error("Error removing from local storage", error);
     }
+};
+
+/** Format a byte count ("1048576", 1048576) as "1 MB". Returns "" when unknown. */
+export const formatFileSize = (bytes) => {
+    const n = Number(bytes);
+    if (!Number.isFinite(n) || n < 0) return "";
+    if (n < 1024) return `${n} B`;
+    const units = ["KB", "MB", "GB", "TB"];
+    let value = n / 1024;
+    let unit = 0;
+    while (value >= 1024 && unit < units.length - 1) {
+        value /= 1024;
+        unit += 1;
+    }
+    return `${value >= 100 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
 };
 
 const extractDriveFileId = (url) => {

@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { extractDriveFileId } from '@/helpers'
+import { extractDriveFileId, formatFileSize } from '@/helpers'
 import { displayCourseCode } from '@/helpers/material-input'
 import { DownloadSimple as Download, Eye } from '@phosphor-icons/react'
 import BookPreviewDialog from './book-preview-dialog'
+import ShareButton from '../share-button'
 
 const BookCard = ({ book }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -14,6 +15,13 @@ const BookCard = ({ book }) => {
 
   const driveFileId = book.driveFileId || extractDriveFileId(book.driveUrl)
   const courseCode = displayCourseCode(book.course) || 'N/A'
+  // The public listing returns course as an array (aggregate $lookup);
+  // the badge helper tolerates that, so the share path must too.
+  const courseEntry = Array.isArray(book.course) ? book.course[0] : book.course
+  const courseCodeValue = courseEntry?.courseCode || ''
+  const courseSharePath = courseCodeValue
+    ? `/books?courseCode=${courseCodeValue}&category=all&page=1`
+    : '/books'
 
   const previewUrl = driveFileId
     ? `https://drive.google.com/file/d/${driveFileId}/preview`
@@ -38,7 +46,17 @@ const BookCard = ({ book }) => {
   }
 
   return (
-    <div className='flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-card transition-shadow duration-150 ease-nuesa hover:shadow-soft-lift'>
+    <div className='relative flex h-full flex-col overflow-hidden rounded-md border bg-card shadow-card transition-shadow duration-150 ease-nuesa hover:shadow-soft-lift'>
+      <div className='absolute right-2 top-2'>
+        <ShareButton
+          iconOnly
+          variant='ghost'
+          className='h-8 w-8 border-0 p-0 shadow-none'
+          path={courseSharePath}
+          title={`${book.title} (${courseCode}) — study materials on Quire`}
+          label='Share this material'
+        />
+      </div>
       <div className='flex flex-1 flex-col p-5'>
         {/* Book Cover and Info */}
         <div className='mb-5 flex gap-4'>
@@ -57,12 +75,12 @@ const BookCard = ({ book }) => {
 
           {/* Book Info */}
           <div className='flex flex-1 flex-col'>
-            <div className='flex items-start justify-between gap-2'>
+            <div className='flex items-start justify-between gap-2 pr-8'>
               <Badge variant='secondary'>
                 {courseCode}
               </Badge>
               <span className='font-mono text-[0.6875rem] uppercase tracking-[0.09em] text-muted-foreground'>
-                {book.size}
+                {formatFileSize(book.size)}
               </span>
             </div>
             <h3 className='mt-3 line-clamp-2 text-lg font-semibold leading-snug tracking-tight'>
@@ -75,16 +93,16 @@ const BookCard = ({ book }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className='mt-auto flex w-full gap-2'>
+        <div className='mt-auto flex w-full flex-col gap-2 sm:flex-row'>
           <Button
             variant='outline'
-            className='flex-1'
+            className='w-full sm:flex-1'
             onClick={() => handlePreview()}
           >
             <Eye className='h-4 w-4' />
             Preview
           </Button>
-          <form onSubmit={handleDownload} className='flex-1'>
+          <form onSubmit={handleDownload} className='w-full sm:flex-1'>
             <Button className='w-full' type='submit'>
               <Download className='h-4 w-4' />
               Download

@@ -32,7 +32,7 @@ export default function CourseFilters({ filters, onFilterChange }) {
         >
           {departments.map((department) => (
             <div key={department.id} className="flex items-center space-x-2">
-              <RadioGroupItem value={department.shortName} id={`department-${department.id}`} />
+              <RadioGroupItem value={department.slug} id={`department-${department.id}`} />
               <Label htmlFor={`department-${department.id}`} className="cursor-pointer">
                 {department.name}
               </Label>
@@ -55,7 +55,7 @@ export default function CourseFilters({ filters, onFilterChange }) {
 >
   {levels.map(level => (
     <div key={level} className='flex items-center space-x-2'>
-      <RadioGroupItem value={level} id={`level-${level}`} defaultValue={level} />
+      <RadioGroupItem value={String(level)} id={`level-${level}`} defaultValue={level} />
       <Label htmlFor={`level-${level}`} className='cursor-pointer'>
         {level} Level
       </Label>
