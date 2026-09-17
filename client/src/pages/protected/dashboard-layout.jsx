@@ -17,8 +17,8 @@ function DashboardLayout() {
 // const user = state.state.currentUser
 // console.log(state)
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col">
-      <DashboardHeader user={user} onMenuClick={() => setSidebarOpen(true)} />
+    <div className="flex min-h-screen flex-col">
+      <DashboardHeader user={user} isOpen={sidebarOpen} onMenuClick={() => setSidebarOpen((v) => !v)} />
 
       <div className="flex flex-1 overflow-hidden">
         <DashboardSidebar user={user} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />

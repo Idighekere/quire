@@ -1,5 +1,6 @@
-import { Menu, LogOut } from 'lucide-react'
+import { SignOut as LogOut } from "@phosphor-icons/react"
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authApi } from '@/services'
 import toast from 'react-hot-toast'
 
-function DashboardHeader ({ user, onMenuClick }) {
+function DashboardHeader ({ user, onMenuClick, isOpen = false }) {
   const location = useLocation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -51,22 +52,43 @@ function DashboardHeader ({ user, onMenuClick }) {
   return (
     <header className='sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6'>
       <Button
-        variant='outline'
+        variant='ghost'
         size='icon'
-        className='md:hidden'
+        aria-label='Toggle menu'
+        aria-expanded={isOpen}
+        className='md:hidden rounded-sm hover:bg-muted/60 active:bg-muted/80'
         onClick={onMenuClick}
       >
-        <Menu className='h-7 w-7' />
+        <span className='relative block h-3.5 w-5' aria-hidden>
+          <span
+            className={cn(
+              'absolute left-0 top-0 h-[2px] w-4/5 rounded-full bg-current transition-all duration-300 ease-nuesa',
+              isOpen && 'top-1/2 w-full -translate-y-1/2 rotate-45'
+            )}
+          />
+          <span
+            className={cn(
+              'absolute left-0 top-1/2 h-[2px] w-full -translate-y-1/2 rounded-full bg-current transition-all duration-300 ease-nuesa',
+              isOpen && 'opacity-0'
+            )}
+          />
+          <span
+            className={cn(
+              'absolute bottom-0 left-0 h-[2px] w-3/5 rounded-full bg-current transition-all duration-300 ease-nuesa',
+              isOpen && 'bottom-1/2 w-full translate-y-1/2 -rotate-45'
+            )}
+          />
+        </span>
         <span className='sr-only'>Toggle menu</span>
       </Button>
 
-      <h1 className='text-xl font-semibold'>{getPageTitle()}</h1>
+      <h1 className='text-xl font-semibold tracking-tight'>{getPageTitle()}</h1>
 
       <div className='ml-auto flex items-center gap-2'>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             {/* <Button variant='ghost' className='relative h-9 w-9 rounded-full hover:bg-transparent'> */}
-              <Avatar className='h-9 w-9 border-2 font-bold'>
+              <Avatar className='h-9 w-9 cursor-pointer border-2 font-bold shadow-card'>
                 {/* <AvatarImage src={user.avatarUrl} alt={user.name} /> */}
                 <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
               </Avatar>
@@ -87,7 +109,7 @@ function DashboardHeader ({ user, onMenuClick }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}
-              className='text-red-500 cursor-pointer'
+              className='text-destructive cursor-pointer'
             >
               <LogOut className='mr-2 h-4 w-4' />
               <span>Log out</span>
