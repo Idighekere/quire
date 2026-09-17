@@ -1,6 +1,7 @@
 import React from 'react'
 import NavBar from './navbar'
 import Footer from './footer'
+import ScrollToTop from './scroll-to-top'
 import LoadingSpinner from './loading-spinner'
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '@/contexts'
@@ -14,6 +15,7 @@ const AuthLayout = ({ children }) => {
 
   return (
     <>
+      <ScrollToTop />
       <LoadingSpinner>
         <NavBar />
         {children ? children : <Outlet />}

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Outlet } from "react-router-dom"
 import {DashboardHeader,DashboardSidebar} from "@/components"
+import ScrollToTop from "@/components/scroll-to-top"
 import { useAuth } from "@/contexts"
 function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -18,6 +19,7 @@ function DashboardLayout() {
 // console.log(state)
   return (
     <div className="flex min-h-screen flex-col">
+      <ScrollToTop />
       <DashboardHeader user={user} isOpen={sidebarOpen} onMenuClick={() => setSidebarOpen((v) => !v)} />
 
       <div className="flex flex-1 overflow-hidden">
