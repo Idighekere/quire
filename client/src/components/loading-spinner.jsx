@@ -3,7 +3,8 @@ import { useLocation } from "react-router-dom"
 import Preloader from "@/components/ui/preloader"
 
 function LoadingSpinner({ children, delay = 2000 }) {
-  // const location = useLocation()
+  const location = useLocation()
+
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -15,9 +16,9 @@ function LoadingSpinner({ children, delay = 2000 }) {
     }, delay)
 
     return () => clearTimeout(timer)
-  }, [window.location.pathname, delay])
+  }, [location.pathname, delay])
 
-  if (isLoading && window.location.pathname!=='/') {
+  if (isLoading && location.pathname !== "/") {
     return <Preloader fullScreen message="" />
   }
 

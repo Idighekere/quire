@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { CaretLeft as ChevronLeft, CaretRight as ChevronRight } from "@phosphor-icons/react"
 
-const Pagination=({ currentPage = 1, totalPages = 5, onPageChange })=> {
+const Pagination = ({ currentPage = 1, totalPages = 5, onPageChange }) => {
   // Generate page numbers to display
   const getPageNumbers = () => {
     const pages = []
@@ -40,9 +39,9 @@ const Pagination=({ currentPage = 1, totalPages = 5, onPageChange })=> {
   const pageNumbers = getPageNumbers()
 
   return (
-    <div className="flex items-center justify-center space-x-2 py-4">
+    <div className="flex items-center justify-center gap-2 py-6">
       <Button
-        variant="outline"
+        variant="ghost"
         size="icon"
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
@@ -53,14 +52,15 @@ const Pagination=({ currentPage = 1, totalPages = 5, onPageChange })=> {
 
       {pageNumbers.map((page, index) =>
         page === "..." ? (
-          <span key={`ellipsis-${index}`} className="px-2">
+          <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
             ...
           </span>
         ) : (
           <Button
             key={page}
-            variant={currentPage === page ? "default" : "outline"}
+            variant={currentPage === page ? "secondary" : "ghost"}
             size="icon"
+            className={currentPage === page ? "font-semibold" : ""}
             onClick={() => onPageChange(page)}
           >
             {page}
@@ -69,7 +69,7 @@ const Pagination=({ currentPage = 1, totalPages = 5, onPageChange })=> {
       )}
 
       <Button
-        variant="outline"
+        variant="ghost"
         size="icon"
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
