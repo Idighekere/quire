@@ -29,15 +29,18 @@ const verifyDriveLinkPublic = async (driveFileId, next) => {
 };
 const getBooksByCourse = (0, middlewares_1.catchAsync)(async (req, res, next) => {
     const { courseCode } = req.params;
+    const { page = "1", limit = "12", category, search } = req.query;
     if (!courseCode) {
         return next(new utils_1.ErrorResponse("Course parameter is required", 400));
     }
+    const pageNum = Math.max(parseInt(String(page), 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(String(limit), 10) || 12, 1), 100);
     // const books = await Book.find({ category:"textBook"}).populate('course');
     // const books = await Book.find({ "course": courseId }).populate({
     //     path:'course',
     //     select:"title courseCode"
     // }).lean().exec();
-    const books = await models_1.Book.aggregate([
+    const basePipeline = [
         {
             $lookup: {
                 from: "courses",
@@ -57,6 +60,22 @@ const getBooksByCourse = (0, middlewares_1.catchAsync)(async (req, res, next) =>
         // {
         //     $unwind: '$course',
         // },
+    ];
+    const pagePipeline = [...basePipeline];
+    if (typeof category === "string" && category.trim() && category.trim() !== "all") {
+        pagePipeline.push({ $match: { category: category.trim() } });
+    }
+    if (typeof search === "string" && search.trim()) {
+        const rx = new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+        pagePipeline.push({ $match: { title: rx } });
+    }
+    const countResult = await models_1.Book.aggregate([...pagePipeline, { $count: "total" }]).exec();
+    const total = countResult[0]?.total || 0;
+    const books = await models_1.Book.aggregate([
+        ...pagePipeline,
+        { $sort: { createdAt: -1 } },
+        { $skip: (pageNum - 1) * limitNum },
+        { $limit: limitNum },
         {
             $project: {
                 title: 1,
@@ -68,6 +87,7 @@ const getBooksByCourse = (0, middlewares_1.catchAsync)(async (req, res, next) =>
                 academicSession: 1,
                 status: 1,
                 size: 1,
+                createdAt: 1,
                 "course.title": 1,
                 "course.courseCode": 1,
                 "course.codePrefix": 1,
@@ -77,7 +97,15 @@ const getBooksByCourse = (0, middlewares_1.catchAsync)(async (req, res, next) =>
     // if (!book) {
     //     return next(new ErrorResponse("Book not found", 404))
     // }
-    (0, utils_1.SuccessResponse)(res, 200, books, "success");
+    (0, utils_1.SuccessResponse)(res, 200, {
+        books,
+        pagination: {
+            currentPage: pageNum,
+            totalPages: Math.ceil(total / limitNum),
+            totalItems: total,
+            itemsPerPage: limitNum,
+        },
+    }, "success");
 });
 exports.getBooksByCourse = getBooksByCourse;
 const addBook = (0, middlewares_1.catchAsync)(async (req, res, next) => {

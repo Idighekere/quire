@@ -49,10 +49,14 @@ const verifyDriveLinkPublic = async (
 const getBooksByCourse = catchAsync(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const { courseCode } = req.params;
+    const { page = "1", limit = "12", category, search } = req.query;
 
     if (!courseCode) {
       return next(new ErrorResponse("Course parameter is required", 400));
     }
+
+    const pageNum = Math.max(parseInt(String(page), 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(String(limit), 10) || 12, 1), 100);
 
     // const books = await Book.find({ category:"textBook"}).populate('course');
     // const books = await Book.find({ "course": courseId }).populate({
@@ -60,8 +64,7 @@ const getBooksByCourse = catchAsync(
     //     select:"title courseCode"
     // }).lean().exec();
 
-    const books = await Book.aggregate(
-      [
+    const basePipeline = [
         {
           $lookup: {
             from: "courses",
@@ -81,6 +84,31 @@ const getBooksByCourse = catchAsync(
         // {
         //     $unwind: '$course',
         // },
+    ];
+
+    const pagePipeline: mongoose.PipelineStage[] = [...basePipeline];
+
+    if (typeof category === "string" && category.trim() && category.trim() !== "all") {
+      pagePipeline.push({ $match: { category: category.trim() } });
+    }
+
+    if (typeof search === "string" && search.trim()) {
+      const rx = new RegExp(
+        search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+        "i",
+      );
+      pagePipeline.push({ $match: { title: rx } });
+    }
+
+    const countResult = await Book.aggregate([...pagePipeline, { $count: "total" }]).exec();
+    const total = (countResult[0] as { total?: number } | undefined)?.total || 0;
+
+    const books = await Book.aggregate(
+      [
+        ...pagePipeline,
+        { $sort: { createdAt: -1 } },
+        { $skip: (pageNum - 1) * limitNum },
+        { $limit: limitNum },
         {
           $project: {
             title: 1,
@@ -92,6 +120,7 @@ const getBooksByCourse = catchAsync(
             academicSession: 1,
             status: 1,
             size: 1,
+            createdAt: 1,
             "course.title": 1,
             "course.courseCode": 1,
             "course.codePrefix": 1,
@@ -105,7 +134,15 @@ const getBooksByCourse = catchAsync(
     //     return next(new ErrorResponse("Book not found", 404))
     // }
 
-    SuccessResponse(res, 200, books, "success");
+    SuccessResponse(res, 200, {
+      books,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        totalItems: total,
+        itemsPerPage: limitNum,
+      },
+    }, "success");
   },
 );
 
