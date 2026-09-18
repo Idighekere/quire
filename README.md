@@ -91,8 +91,8 @@ Students browse, preview, download, and share materials with no sign-in. Contrib
 
 ### 1. Clone
 ```sh
-git clone https://github.com/idighekere/faculty-library.git
-cd faculty-library
+git clone https://github.com/idighekere/quire.git
+cd quire
 git checkout usequire
 ```
 
