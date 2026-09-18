@@ -31,10 +31,12 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
+        // NOTE: no `icons` chunk on purpose. Forcing all Phosphor icons into
+        // one chunk makes the landing download dashboard-only icons too.
+        // Without it, each route chunk tree-shakes just the icons it uses.
         manualChunks: {
           vendor: ['react', 'react-dom', 'react-router-dom'],
           query: ['@tanstack/react-query'],
-          icons: ['@phosphor-icons/react'],
         },
       },
     },

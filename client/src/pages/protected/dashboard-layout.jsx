@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Outlet } from "react-router-dom"
-import {DashboardHeader,DashboardSidebar} from "@/components"
+import DashboardHeader from "@/components/dashboard/dashboard-header"
+import DashboardSidebar from "@/components/dashboard/dashboard-sidebar"
 import ScrollToTop from "@/components/scroll-to-top"
 import { useAuth } from "@/contexts"
 function DashboardLayout() {

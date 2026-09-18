@@ -1,17 +1,18 @@
 import { lazy, Suspense } from 'react'
-import { AuthLayout, ErrorBoundary, HomeSharedLayout, ProtectedRoute } from './components'
+import AuthLayout from './components/auth-layout'
+import ErrorBoundary from './components/errors/error-boundary'
+import HomeSharedLayout from './components/home-shared-layout'
+import ProtectedRoute from './components/protected-route'
 import Preloader from '@/components/ui/preloader'
-import {
-  Home,
-  CustomErrorPage,
-  ErrorPage,
-} from './pages/unprotected'
+import CustomErrorPage from './pages/unprotected/custom-error'
+import ErrorPage from './pages/unprotected/error'
 import {
   AuthProvider,
   BookSearchProvider,
   CourseSearchParamsProvider
 } from './contexts'
-import { DashboardLayout } from '@/pages/protected'
+import DashboardLayout from '@/pages/protected/dashboard-layout'
+import Home from './pages/unprotected/home'
 
 const CoursesPage = lazy(() => import('./pages/unprotected/courses'))
 const BooksPage = lazy(() => import('./pages/unprotected/books'))

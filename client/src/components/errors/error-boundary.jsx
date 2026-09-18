@@ -1,4 +1,4 @@
-import { ErrorPage } from '@/pages/unprotected'
+import ErrorPage from '@/pages/unprotected/error'
 import { Component } from 'react'
 
 /**

@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { extractDriveFileId, formatFileSize } from '@/helpers'
 import { displayCourseCode } from '@/helpers/material-input'
 import { DownloadSimple as Download, Eye } from '@phosphor-icons/react'
-import BookPreviewDialog from './book-preview-dialog'
 import ShareButton from '../share-button'
+
+const BookPreviewDialog = lazy(() => import('./book-preview-dialog'))
 
 const BookCard = ({ book }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -51,7 +52,7 @@ const BookCard = ({ book }) => {
         <ShareButton
           iconOnly
           variant='ghost'
-          className='h-8 w-8 border-0 p-0 shadow-none'
+          className='h-11 w-11 border-0 p-0 shadow-none'
           path={courseSharePath}
           title={`${book.title} (${courseCode}) — study materials on Quire`}
           label='Share this material'
@@ -111,13 +112,17 @@ const BookCard = ({ book }) => {
         </div>
       </div>
 
-      {/* Preview Dialog */}
-      <BookPreviewDialog
-        open={isPreviewOpen}
-        onOpenChange={setIsPreviewOpen}
-        previewUrl={previewUrl}
-        title={book.title}
-      />
+      {/* Preview Dialog — lazy so radix-dialog only loads on demand */}
+      {isPreviewOpen && (
+        <Suspense fallback={null}>
+          <BookPreviewDialog
+            open={isPreviewOpen}
+            onOpenChange={setIsPreviewOpen}
+            previewUrl={previewUrl}
+            title={book.title}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }
