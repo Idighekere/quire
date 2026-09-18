@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BooksLayout, BookResults } from '@/components'
+import Pagination from '@/components/pagination'
 import { useBookParams } from '@/contexts'
 import { getBooksByCoursesQueryOptions } from '@/services'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
+
+const ITEMS_PER_PAGE = 12
 
 function BooksPage () {
   const [currentPage, setCurrentPage] = useState(1)
@@ -11,14 +14,33 @@ function BooksPage () {
   const {
     bookParams,
     updateBookParams,
+    bookSearchText,
     isLoading: paramsLoading
   } = useBookParams()
 
+  // Server-side pagination: page resets whenever the course, category, or
+  // search text changes.
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [bookParams.courseCode, bookParams.category, bookSearchText])
+
   const {
-    data: booksData = [],
+    data: booksData,
     isPending: booksLoading,
     error,
-  } = useQuery(getBooksByCoursesQueryOptions(bookParams, paramsLoading))
+  } = useQuery(getBooksByCoursesQueryOptions(bookParams, paramsLoading, {
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+    search: bookSearchText || "",
+  }))
+
+  const books = (booksData && booksData.data && booksData.data.books) || []
+  const pagination = booksData && booksData.data && booksData.data.pagination
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   return (
     <div className='min-h-screen'>
@@ -31,12 +53,21 @@ function BooksPage () {
         {(paramsLoading || booksLoading) ? (
           <BookResultsSkeleton />
         ) : (
-          <BookResults
-            currentPage={currentPage}
-            booksData={booksData.data}
-            error={error}
-            bookParams={bookParams}
-          />
+          <>
+            <BookResults
+              books={books}
+              error={error}
+            />
+            {pagination && pagination.totalPages > 1 && (
+              <div className='mt-6'>
+                <Pagination
+                  currentPage={pagination.currentPage}
+                  totalPages={pagination.totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
+          </>
         )}
       </BooksLayout>
     </div>

@@ -18,9 +18,16 @@ export const api = {
     return response.data;
   },
 
-  getBooksByCourse: async (courseCode) => {
+  getBooksByCourse: async (courseCode, params = {}) => {
     if (!courseCode) return [];
-    const response = await apiClient.get(`/books/course/${courseCode}`);
+    const response = await apiClient.get(`/books/course/${courseCode}`, {
+      params: {
+        page: params.page || 1,
+        limit: params.limit || 12,
+        category: params.category || "",
+        search: params.search || "",
+      },
+    });
     return response.data;
   },
 

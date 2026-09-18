@@ -40,12 +40,12 @@ export const getCoursesByFilterQueryOptions=(courseParams,paramsLoading)=>{
     })
 }
 
-export const getBooksByCoursesQueryOptions=(bookParams,paramsLoading)=>{
-
-    const { courseCode } = bookParams
+export const getBooksByCoursesQueryOptions=(bookParams,paramsLoading, extra = {})=>{
+    const { courseCode, category } = bookParams
+    const { page = 1, limit = 12, search = "" } = extra
     return queryOptions({
-        queryKey: ['books', courseCode],
-        queryFn: () => api.getBooksByCourse(courseCode),
+        queryKey: ['books', courseCode, category, search, page, limit],
+        queryFn: () => api.getBooksByCourse(courseCode, { page, limit, category, search }),
         enabled: !paramsLoading && Boolean(courseCode),
         keepPreviousData: true
     })

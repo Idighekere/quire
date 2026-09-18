@@ -38,6 +38,41 @@ function prettifySlug(slug) {
     .join(" ");
 }
 
+// Canonical department names so shared filtered links read
+// "Computer Engineering", never "CPE" or "Cpe". Accepts URL slugs,
+// legacy shortNames (any case), and full names (pass-through).
+const DEPARTMENTS_BY_SLUG = {
+  "agricultural-engineering": "Agricultural Engineering",
+  "chemical-engineering": "Chemical Engineering",
+  "civil-engineering": "Civil Engineering",
+  "computer-engineering": "Computer Engineering",
+  "electrical-electronic-engineering": "Electrical and Electronics Engineering",
+  "food-engineering": "Food Engineering",
+  "mechanical-engineering": "Mechanical Engineering",
+  "petroleum-engineering": "Petroleum Engineering",
+};
+
+const DEPARTMENTS_BY_SHORTNAME = {
+  AGE: "Agricultural Engineering",
+  CHE: "Chemical Engineering",
+  CVE: "Civil Engineering",
+  CPE: "Computer Engineering",
+  ELE: "Electrical and Electronics Engineering",
+  FDE: "Food Engineering",
+  MEE: "Mechanical Engineering",
+  PEE: "Petroleum Engineering",
+};
+
+function departmentName(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  return (
+    DEPARTMENTS_BY_SLUG[raw.toLowerCase()] ||
+    DEPARTMENTS_BY_SHORTNAME[raw.toUpperCase()] ||
+    prettifySlug(raw)
+  );
+}
+
 /**
  * Build the card for a path+query. Vercel passes the original page as
  * ?path=/books&courseCode=GET211... (see vercel.json rewrite).
@@ -68,7 +103,7 @@ function cardFor(path, query) {
 
   if (path === "/courses") {
     const bits = [];
-    if (query.department) bits.push(prettifySlug(query.department));
+    if (query.department) bits.push(departmentName(query.department));
     if (query.level) bits.push(`${query.level} Level`);
     if (query.semester) bits.push(`${query.semester} Semester`);
     if (bits.length > 0) {

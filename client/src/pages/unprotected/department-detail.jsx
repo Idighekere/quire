@@ -171,7 +171,7 @@ export default function DepartmentDetailPage() {
                     </p>
                   </div>
                 </div>
-                <Link to={`/courses?department=${department.shortName}`}>
+                <Link to={`/courses?department=${department.slug}`}>
                   <Button size='lg'>
                     View Courses
                     <ArrowRight className='ml-2 h-4 w-4' />
