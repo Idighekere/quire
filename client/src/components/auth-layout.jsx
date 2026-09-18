@@ -18,7 +18,9 @@ const AuthLayout = ({ children }) => {
       <ScrollToTop />
       <LoadingSpinner>
         <NavBar />
-        {children ? children : <Outlet />}
+        <main>
+          {children ? children : <Outlet />}
+        </main>
         {/* <Footer /> */}
       </LoadingSpinner>
     </>

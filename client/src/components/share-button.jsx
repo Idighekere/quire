@@ -75,6 +75,7 @@ const ShareButton = ({
           className={className}
           aria-label={label}
           title={label}
+          style={{ minHeight: iconOnly ? 44 : undefined, minWidth: iconOnly ? 44 : undefined }}
         >
           <ShareIcon className='h-4 w-4' />
           {!iconOnly && label}

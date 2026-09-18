@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookCard } from "@/components";
+import BookCard from "@/components/books/book-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAllBooksQueryOptions } from "@/services";
@@ -22,9 +23,33 @@ function RecentlyAddedSkeleton() {
 }
 
 export default function RecentlyAdded() {
-  const { data, isPending, error } = useQuery(
-    getAllBooksQueryOptions({ page: 1, limit: RECENT_LIMIT })
-  );
+  const sectionRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "400px 0px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const { data, isPending, error } = useQuery({
+    ...getAllBooksQueryOptions({ page: 1, limit: RECENT_LIMIT }),
+    enabled: isVisible,
+  });
 
   if (error) return null;
   if (!isPending && !(data?.data?.books?.length > 0)) return null;
@@ -32,7 +57,7 @@ export default function RecentlyAdded() {
   const books = data?.data?.books || [];
 
   return (
-    <section className="w-full px-4 py-14 md:px-8 md:py-20">
+    <section ref={sectionRef} className="w-full px-4 py-14 md:px-8 md:py-20">
       <div className="mx-auto max-w-7xl">
         <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
@@ -52,7 +77,7 @@ export default function RecentlyAdded() {
           </Button>
         </div>
 
-        {isPending ? (
+        {isPending || !isVisible ? (
           <RecentlyAddedSkeleton />
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

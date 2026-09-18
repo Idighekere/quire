@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -11,11 +11,11 @@ import { MagnifyingGlass as Search, Building, Flask, FileText, Gear, Cpu } from 
 import { departments, levels, semesters } from '@/constants'
 import { BRAND_NAME } from '@/constants/branding'
 
-function FloatingChip({ children, wash, rotate, className, hideOnMobile }) {
+function FloatingChip({ children, wash, rotate, className, hideOnMobile, paused }) {
   return (
     <div
       className={`absolute flex ${hideOnMobile ? 'hidden md:flex' : 'flex'} ${className}`}
-      style={{ "--r": `${rotate}deg` }}
+      style={{ "--r": `${rotate}deg`, animationPlayState: paused ? 'paused' : undefined }}
       aria-hidden="true"
     >
       <div className={`flex items-center gap-1.5 rounded-[14px] border bg-card px-2.5 py-1.5 text-[0.7rem] font-medium shadow-card md:px-3 md:py-2 md:text-xs ${wash}`} style={{ transform: "rotate(var(--r))" }}>
@@ -29,6 +29,22 @@ export default function Hero () {
   const [department, setDepartment] = useState('')
   const [level, setLevel] = useState('')
   const [semester, setSemester] = useState('')
+  const [heroVisible, setHeroVisible] = useState(true)
+  const sectionRef = useRef(null)
+
+  // Pause floating-chip animations when the hero is offscreen (mobile battery/CPU)
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.isIntersecting),
+      { threshold: 0 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const paused = !heroVisible
 
   const handleSearch = () => {
     if (department && level && semester) {
@@ -39,23 +55,23 @@ export default function Hero () {
   const isReady = Boolean(department && level && semester)
 
   return (
-    <section className='relative flex w-full flex-col items-center justify-center overflow-visible px-4 pb-16 pt-16 md:pb-24 md:pt-24 lg:pb-28 lg:pt-32'>
+    <section ref={sectionRef} className='relative flex w-full flex-col items-center justify-center overflow-visible px-4 pb-16 pt-16 md:pb-24 md:pt-24 lg:pb-28 lg:pt-32'>
       <div className='relative mx-auto w-full max-w-5xl'>
         {/* Orbit chips — orbit around headline only, well clear of pill */}
-        <FloatingChip wash="bg-accent-lavender" rotate={-5} className="left-[0%] top-[8%] animate-[quire-float_5s_ease-in-out_infinite]" hideOnMobile>
-          <Building weight="bold" className="h-3.5 w-3.5 shrink-0" /> 200L · CVE
+        <FloatingChip wash="bg-accent-lavender" rotate={-5} className="left-[0%] top-[8%] animate-[quire-float_5s_ease-in-out_infinite]" hideOnMobile paused={paused}>
+          <Building weight="bold" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> 200L · CVE
         </FloatingChip>
-        <FloatingChip wash="bg-accent-mint" rotate={4} className="right-[0%] top-[10%] animate-[quire-float_6s_ease-in-out_0.7s_infinite]" hideOnMobile>
-          <Flask weight="bold" className="h-3.5 w-3.5 shrink-0" /> CHE 211
+        <FloatingChip wash="bg-accent-mint" rotate={4} className="right-[0%] top-[10%] animate-[quire-float_6s_ease-in-out_0.7s_infinite]" hideOnMobile paused={paused}>
+          <Flask weight="bold" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> CHE 211
         </FloatingChip>
-        <FloatingChip wash="bg-accent-sand" rotate={-4} className="left-[1%] top-[38%] animate-[quire-float_5.5s_ease-in-out_0.3s_infinite]">
-          <FileText weight="bold" className="h-3.5 w-3.5 shrink-0" /> Past question
+        <FloatingChip wash="bg-accent-sand" rotate={-4} className="left-[1%] top-[38%] animate-[quire-float_5.5s_ease-in-out_0.3s_infinite]" paused={paused}>
+          <FileText weight="bold" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> Past question
         </FloatingChip>
-        <FloatingChip wash="bg-accent-sky" rotate={3} className="right-[1%] top-[40%] animate-[quire-float_6.2s_ease-in-out_1s_infinite]">
-          <Gear weight="bold" className="h-3.5 w-3.5 shrink-0" /> MEE 304
+        <FloatingChip wash="bg-accent-sky" rotate={3} className="right-[1%] top-[40%] animate-[quire-float_6.2s_ease-in-out_1s_infinite]" paused={paused}>
+          <Gear weight="bold" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> MEE 304
         </FloatingChip>
-        <FloatingChip wash="bg-accent-blush" rotate={-3} className="left-[38%] top-[2%] hidden lg:flex animate-[quire-float_4.6s_ease-in-out_0.9s_infinite]">
-          <Cpu weight="bold" className="h-3.5 w-3.5 shrink-0" /> CPE 419
+        <FloatingChip wash="bg-accent-blush" rotate={-3} className="left-[38%] top-[2%] hidden lg:flex animate-[quire-float_4.6s_ease-in-out_0.9s_infinite]" paused={paused}>
+          <Cpu weight="bold" className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> CPE 419
         </FloatingChip>
 
         {/* Starburst doodle */}
@@ -81,13 +97,14 @@ export default function Hero () {
         <div className='w-full rounded-xl border bg-card p-4 shadow-soft-lift md:p-5' style={{ borderRadius: 'calc(var(--radius-xl) * 0.8)' }}>
           <div className='grid grid-cols-1 items-end gap-3 md:grid-cols-[1fr_1fr_1fr_auto]'>
             <div>
+              <label htmlFor="hero-department" className="sr-only">Department</label>
               <Select value={department} onValueChange={setDepartment} name="department">
-                <SelectTrigger className='w-full'>
+                <SelectTrigger id="hero-department" aria-label="Department" className='w-full'>
                   <SelectValue placeholder='Select Department' />
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map(dept => (
-                    <SelectItem key={dept.id} value={dept.shortName}>
+                    <SelectItem key={dept.id} value={dept.slug}>
                       {dept.name}
                     </SelectItem>
                   ))}
@@ -96,8 +113,9 @@ export default function Hero () {
             </div>
 
             <div>
+              <label htmlFor="hero-level" className="sr-only">Level</label>
               <Select value={level} onValueChange={setLevel} name="level">
-                <SelectTrigger className='w-full'>
+                <SelectTrigger id="hero-level" aria-label="Level" className='w-full'>
                   <SelectValue placeholder='Level' />
                 </SelectTrigger>
                 <SelectContent>
@@ -111,8 +129,9 @@ export default function Hero () {
             </div>
 
             <div>
+              <label htmlFor="hero-semester" className="sr-only">Semester</label>
               <Select value={semester} onValueChange={setSemester} name="semester">
-                <SelectTrigger className='w-full'>
+                <SelectTrigger id="hero-semester" aria-label="Semester" className='w-full'>
                   <SelectValue placeholder='Semester' />
                 </SelectTrigger>
                 <SelectContent>
@@ -130,15 +149,16 @@ export default function Hero () {
               className='w-full md:w-auto'
               onClick={handleSearch}
               disabled={!isReady}
+              aria-describedby="hero-search-hint"
             >
-              <Search weight='bold' className='h-5 w-5' />
+              <Search weight='bold' className='h-5 w-5' aria-hidden="true" />
               Search Courses
             </Button>
           </div>
         </div>
 
-        <p className='mt-6 text-center font-mono text-[0.6875rem] uppercase tracking-[0.09em] text-muted-foreground'>
-          Prefer to browse the shelves
+        <p id="hero-search-hint" className='mt-6 text-center font-mono text-[0.6875rem] uppercase tracking-[0.09em] text-muted-foreground'>
+          {isReady ? 'Prefer to browse the shelves' : 'Select department, level and semester to search'}
         </p>
       </div>
 

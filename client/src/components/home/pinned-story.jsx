@@ -1,13 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
-import { MagnifyingGlass, ChatCircle, Eye } from '@phosphor-icons/react'
+import {
+  MagnifyingGlass,
+  ChatCircle,
+  Eye,
+  Paperclip,
+  Folders,
+  ChatText,
+  PaperPlaneTilt,
+  FolderOpen,
+  Notebook,
+} from '@phosphor-icons/react'
 
 const withoutCards = [
-  { icon: '📎', title: 'Fwd: MEE 304 note.pdf', sub: 'Whose Drive is this?', rotate: -4 },
-  { icon: '🗂️', title: '7 Drive folders, no structure', sub: '', rotate: 2 },
-  { icon: '💬', title: 'Tap to resend', sub: 'WhatsApp material expired', rotate: -2 },
-  { icon: '📨', title: 'Request buried in class group', sub: 'no one saw it', rotate: 3 },
-  { icon: '📂', title: 'Past questions 2021–2024', sub: 'scattered across 5 folders', rotate: -3 },
-  { icon: '📒', title: "Notes in someone's green book", sub: '', rotate: 2 },
+  { icon: Paperclip, title: 'Fwd: MEE 304 note.pdf', sub: 'Whose Drive is this?', rotate: -4 },
+  { icon: Folders, title: '7 Drive folders, no structure', sub: '', rotate: 2 },
+  { icon: ChatText, title: 'Tap to resend', sub: 'WhatsApp material expired', rotate: -2 },
+  { icon: PaperPlaneTilt, title: 'Request buried in class group', sub: 'no one saw it', rotate: 3 },
+  { icon: FolderOpen, title: 'Past questions 2021–2024', sub: 'scattered across 5 folders', rotate: -3 },
+  { icon: Notebook, title: "Notes in someone's green book", sub: '', rotate: 2 },
 ]
 
 const withCards = [
@@ -50,6 +60,7 @@ export default function PinnedStory() {
   useEffect(() => {
     if (isMobile) return
     let ticking = false
+    let lastProgress = -1
     const onScroll = () => {
       if (ticking) return
       ticking = true
@@ -60,7 +71,11 @@ export default function PinnedStory() {
         const total = el.offsetHeight - window.innerHeight
         const scrolled = Math.min(Math.max(-rect.top, 0), total)
         const p = total > 0 ? scrolled / total : 0
-        setProgress(p)
+        // Only re-render on meaningful progress change (perf: skip per-frame setState)
+        if (Math.abs(p - lastProgress) > 0.02) {
+          lastProgress = p
+          setProgress(p)
+        }
         ticking = false
       })
     }
@@ -74,13 +89,16 @@ export default function PinnedStory() {
   // Mobile fallback — no pin, just stacked (warm espresso, not tezera navy)
   if (isMobile) {
     return (
-      <section className="w-full bg-[#2d241b] px-4 py-14">
+      <section className="w-full bg-[#2d241b] px-4 py-14" style={{ contentVisibility: 'auto' }}>
         <div className="mx-auto max-w-5xl">
           <h2 className="text-center font-serif text-2xl text-[#a3a69a]">Without the Library</h2>
           <div className="mt-6 grid grid-cols-2 gap-3">
             {withoutCards.map((c) => (
               <div key={c.title} className="rounded-xl border border-dashed border-white/15 bg-white/[0.04] p-3">
-                <div className="text-sm text-[#f4f3ee]">{c.icon} {c.title}</div>
+                <div className="flex items-center gap-1.5 text-sm text-[#f4f3ee]">
+                  <c.icon weight="bold" className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{c.title}</span>
+                </div>
                 {c.sub && <div className="mt-1 text-xs text-[#a3a69a]">{c.sub}</div>}
               </div>
             ))}
@@ -109,32 +127,16 @@ export default function PinnedStory() {
   const heading = progress < 0.5 ? 'without' : 'with'
 
   return (
-    <section ref={containerRef} className="relative h-[260vh] w-full bg-[#2d241b]">
+    <section ref={containerRef} className="relative h-[260vh] w-full bg-[#2d241b]" style={{ contentVisibility: 'auto' }}>
       <div className="sticky top-0 flex h-[100vh] w-full flex-col overflow-hidden">
-        {/* Heading — pinned at top, clear of floating pill header */}
+        {/* Heading — single h2, text swaps (screen readers hear one heading) */}
         <div className="relative mx-auto w-full max-w-5xl shrink-0 px-4 pt-20 text-center md:pt-24">
-          <div className="relative h-8 w-full">
-            <h2
-              className="absolute inset-0 font-serif text-2xl transition-all duration-300 md:text-3xl"
-              style={{
-                opacity: heading === 'without' ? 1 : 0,
-                transform: heading === 'without' ? 'translateY(0)' : 'translateY(-8px)',
-                color: '#a3a69a',
-              }}
-            >
-              Without the Library
-            </h2>
-            <h2
-              className="absolute inset-0 font-serif text-2xl transition-all duration-300 md:text-3xl"
-              style={{
-                opacity: heading === 'with' ? 1 : 0,
-                transform: heading === 'with' ? 'translateY(0)' : 'translateY(8px)',
-                color: '#ff7329',
-              }}
-            >
-              With the Library
-            </h2>
-          </div>
+          <h2
+            className="font-serif text-2xl transition-colors duration-300 md:text-3xl"
+            style={{ color: heading === 'without' ? '#a3a69a' : '#ff7329' }}
+          >
+            {heading === 'without' ? 'Without the Library' : 'With the Library'}
+          </h2>
         </div>
 
         <div className="relative flex flex-1 items-center justify-center px-4 pb-10">
@@ -154,14 +156,17 @@ export default function PinnedStory() {
               return (
                 <div
                   key={c.title}
-                  className="rounded-xl border border-dashed border-white/20 bg-white/[0.04] p-3 backdrop-blur-[1px] md:p-4"
+                  className="rounded-xl border border-dashed border-white/20 bg-white/[0.04] p-3 md:p-4"
                   style={{
                     transform: prefersReduced ? undefined : base,
                     opacity: 1,
                     transition: prefersReduced ? 'opacity 150ms ease' : `transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms, opacity 300ms ease ${delay}ms`,
                   }}
                 >
-                  <div className="text-sm font-medium leading-snug text-[#f4f3ee]">{c.icon} {c.title}</div>
+                  <div className="flex items-center gap-1.5 text-sm font-medium leading-snug text-[#f4f3ee]">
+                    <c.icon weight="bold" className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>{c.title}</span>
+                  </div>
                   {c.sub && <div className="mt-1 text-xs text-[#a3a69a]">{c.sub}</div>}
                 </div>
               )
