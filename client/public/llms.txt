@@ -1,0 +1,25 @@
+# Quire — llms.txt
+# A quire for every course. Community-built library for Uniuyo engineering.
+
+> Quire is a community library for University of Uyo engineering students:
+> past questions, lecture notes, and textbooks organized by course.
+> No scattered Drives, no "ask to resend."
+
+## Key pages
+- Home: https://usequire.vercel.app/
+- Library books: https://usequire.vercel.app/books
+- Courses: https://usequire.vercel.app/courses
+- Materials archive: https://usequire.vercel.app/materials
+- Request a material: https://usequire.vercel.app/requests
+- Departments: https://usequire.vercel.app/departments
+- About: https://usequire.vercel.app/about
+
+## How it works
+1. Pick department, level, and semester to find a course.
+2. Open the course to see every material in one place.
+3. Preview in the browser, then download.
+4. Can't find it? File a request at /requests — contributors fulfill it.
+
+## Sharing
+- Book listings accept `?courseCode=XXX&category=all|textBook|pastQuestion|lectureNote&page=1`.
+- Course listings accept `?department=<slug>&level=<100-500>&semester=<first|second>`.

@@ -35,6 +35,27 @@
     <!-- Theme Color -->
     <meta name="theme-color" content="#ff6302" />
 
+    <!-- Preconnect to API + Drive thumbnails (below-fold data) -->
+    <link rel="preconnect" href="https://uniuyo-engineering-library-backend.vercel.app" crossorigin />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+
+    <!-- Structured data for crawlers / AI agents -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Quire",
+        "alternateName": "usequire",
+        "url": "https://usequire.vercel.app",
+        "description": "Community-built library for Uniuyo engineering students — past questions, lecture notes, and textbooks by course.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://usequire.vercel.app/books?courseCode={courseCode}",
+          "query-input": "required name=courseCode"
+        }
+      }
+    </script>
+
     <!-- Preload critical fonts (self-hosted) -->
     <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/DMMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
