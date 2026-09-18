@@ -112,7 +112,7 @@ function RequestCard({ request, onFulfill, onUpvote, upvotePending }) {
             <p className="text-muted-foreground">
               Material:{" "}
               <Link
-                to={"/books?courseCode=" + request.courseCode + "&category=all"}
+                to={"/books?courseCode=" + request.courseCode + "&category=all&query=" + encodeURIComponent(request.fulfilledBook.title)}
                 className="font-medium text-foreground underline decoration-foreground/30 underline-offset-2 transition-colors hover:decoration-primary"
               >
                 {request.fulfilledBook.title}

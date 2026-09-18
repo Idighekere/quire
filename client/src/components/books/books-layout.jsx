@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowLeft, MagnifyingGlass as Search } from '@phosphor-icons/react'
@@ -9,11 +9,16 @@ import { useBookParams } from '@/contexts'
 const BooksLayout = ({ children, bookParams, updateBookParams }) => {
   const [searchQuery, setSearchQuery] = useState()
 
-  const { setBookSearchText } = useBookParams()
+  const { bookSearchText, setBookSearchText } = useBookParams()
+
+  // Keep the input in sync with the URL (shared links arrive pre-filled).
+  useEffect(() => {
+    setSearchQuery(bookSearchText || '')
+  }, [bookSearchText])
 
   const handleSearch = e => {
     e.preventDefault()
-    setBookSearchText(searchQuery)
+    updateBookParams({ query: (searchQuery || '').trim(), page: 1 })
   }
 
   const handleTabChange = category => {

@@ -10,7 +10,7 @@ export function BookSearchProvider ({ children }) {
   const [bookParams, setBookParams] = useState({
     courseCode: '',
     category: 'all',
-    // query: ''
+    query: ''
   })
 
 const [bookSearchText, setBookSearchText] = useState('')
@@ -20,10 +20,13 @@ const [bookSearchText, setBookSearchText] = useState('')
     const parsedParams = {
       courseCode: params.get('courseCode') || '',
       category: params.get('category') || 'all',
-        // query: params.get('query') || ''
+      query: params.get('query') || ''
     }
 
     setBookParams(parsedParams)
+    // The URL is the source of truth for search text so shared links
+    // (e.g. fulfilled requests) arrive with the search bar pre-filled.
+    setBookSearchText(parsedParams.query)
     setIsLoading(false)
   }, [location.search])
 
