@@ -5,6 +5,11 @@ import { Request } from "express";
 
 const getCurrentUser = catchAsync(async (req:Request, res, next) => {
 
+    // Anonymous (optionalAuth left req.user unset) — 200 + null, not 401.
+    // Lets the SPA boot logged-out without a console error.
+    if (!req['user']) {
+        return SuccessResponse(res, 200, null, "No active session")
+    }
 
     const user = await User.findById(req['user']._id)
 

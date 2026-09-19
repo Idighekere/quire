@@ -39,9 +39,12 @@ export const AuthProvider = ({ children }) => {
     enabled: true,
     staleTime: 5 * 60 * 1000,
     select: data => data.data,
-    refetchOnWindowFocus: true,
+    // /users/me now returns 200 + null for anonymous (no console error),
+    // so refetching is cheap — but still no reason to re-hit it on every
+    // window focus/reconnect for logged-out visitors.
+    refetchOnWindowFocus: false,
     refetchOnMount: true,
-    refetchOnReconnect: true,
+    refetchOnReconnect: false,
     refetchInterval: false
   })
 
