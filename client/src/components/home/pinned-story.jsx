@@ -61,15 +61,26 @@ export default function PinnedStory() {
     if (isMobile) return
     let ticking = false
     let lastProgress = -1
+    // Cached geometry — reading getBoundingClientRect/offsetHeight inside
+    // the scroll handler forces a sync layout every frame (our own
+    // setProgress dirties styles between reads). Measure on mount/resize/
+    // load/font-swap instead; per-scroll reads only window.scrollY, which
+    // never forces layout.
+    let docTop = 0
+    let sectionHeight = 0
+    const measure = () => {
+      const el = containerRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      docTop = rect.top + window.scrollY
+      sectionHeight = el.offsetHeight
+    }
     const onScroll = () => {
       if (ticking) return
       ticking = true
       requestAnimationFrame(() => {
-        const el = containerRef.current
-        if (!el) { ticking = false; return }
-        const rect = el.getBoundingClientRect()
-        const total = el.offsetHeight - window.innerHeight
-        const scrolled = Math.min(Math.max(-rect.top, 0), total)
+        const total = sectionHeight - window.innerHeight
+        const scrolled = Math.min(Math.max(window.scrollY - docTop, 0), total)
         const p = total > 0 ? scrolled / total : 0
         // Only re-render on meaningful progress change (perf: skip per-frame setState)
         if (Math.abs(p - lastProgress) > 0.02) {
@@ -79,9 +90,17 @@ export default function PinnedStory() {
         ticking = false
       })
     }
+    measure()
     window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', measure)
+    window.addEventListener('load', measure)
+    if (document.fonts?.ready) document.fonts.ready.then(measure).catch(() => {})
     onScroll()
-    return () => window.removeEventListener('scroll', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', measure)
+      window.removeEventListener('load', measure)
+    }
   }, [isMobile])
 
   const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches

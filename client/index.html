@@ -59,6 +59,10 @@
     <!-- Preload critical fonts (self-hosted) -->
     <link rel="preload" href="/fonts/DMSans-Variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/DMMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Above-fold mono text uses font-medium (hero badge, eyebrows) — without
+         this the Medium face is discovered mid-render and tails the critical
+         path (was the 1091ms chain end in PageSpeed) -->
+    <link rel="preload" href="/fonts/DMMono-Medium.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>
