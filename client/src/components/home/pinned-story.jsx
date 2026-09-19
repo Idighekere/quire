@@ -87,9 +87,12 @@ export default function PinnedStory() {
   const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   // Mobile fallback — no pin, just stacked (warm espresso, not tezera navy)
+  // NOTE: no content-visibility here. Without contain-intrinsic-size the
+  // skipped sections collapse to ~0 height and expand on scroll-near —
+  // another layout-shift source. The card count is small; just render it.
   if (isMobile) {
     return (
-      <section className="w-full bg-[#2d241b] px-4 py-14" style={{ contentVisibility: 'auto' }}>
+      <section className="w-full bg-[#2d241b] px-4 py-14">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-center font-serif text-2xl text-[#a3a69a]">Without the Library</h2>
           <div className="mt-6 grid grid-cols-2 gap-3">
@@ -127,7 +130,7 @@ export default function PinnedStory() {
   const heading = progress < 0.5 ? 'without' : 'with'
 
   return (
-    <section ref={containerRef} className="relative h-[260vh] w-full bg-[#2d241b]" style={{ contentVisibility: 'auto' }}>
+    <section ref={containerRef} className="relative h-[260vh] w-full bg-[#2d241b]">
       <div className="sticky top-0 flex h-[100vh] w-full flex-col overflow-hidden">
         {/* Heading — single h2, text swaps (screen readers hear one heading) */}
         <div className="relative mx-auto w-full max-w-5xl shrink-0 px-4 pt-20 text-center md:pt-24">
